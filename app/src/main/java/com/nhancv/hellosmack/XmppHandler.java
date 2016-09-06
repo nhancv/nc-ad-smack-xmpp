@@ -61,6 +61,7 @@ public class XmppHandler {
         configBuilder.setPort(PORT);
         configBuilder.setDebuggerEnabled(false);
         connection = new XMPPTCPConnection(configBuilder.build());
+        connection.setPacketReplyTimeout(10000);
         connection.addConnectionListener(connectionListener);
         return this;
     }
@@ -69,9 +70,11 @@ public class XmppHandler {
      * Terminal connection
      */
     public void terminalConnection() {
-        Utils.aSyncTask(subscriber -> {
-            connection.disconnect();
-        });
+        try {
+            connection.disconnect(new Presence(Presence.Type.unavailable));
+        } catch (SmackException.NotConnectedException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -80,7 +83,6 @@ public class XmppHandler {
     public void createConnection() {
         Utils.aSyncTask(subscriber -> {
             try {
-                connection.setPacketReplyTimeout(10000);
                 connection.connect();
             } catch (SmackException | XMPPException | IOException e) {
                 e.printStackTrace();
@@ -101,6 +103,16 @@ public class XmppHandler {
             });
         }
     }
+    //----------------------------FUNCTION: CHAT HANDLING---------------------------//
+
+    /**
+     * Get current user
+     *
+     * @return
+     */
+    public String getCurrentUser() {
+        return connection.getUser();
+    }
 
     /**
      * Send Msg
@@ -118,8 +130,9 @@ public class XmppHandler {
         }
     }
 
-    //----------------------------FUNCTION: CHAT HANDLING---------------------------//
-
+    /**
+     * Get user list
+     */
     public void getUserList() {
         Utils.aSyncTask(subscriber -> {
             Roster roster = Roster.getInstanceFor(connection);
@@ -151,14 +164,11 @@ public class XmppHandler {
 
         @Override
         public void connectionClosed() {
-            Log.d("xmpp", "ConnectionCLosed!");
+            Log.d("xmpp", "Connection Closed!");
         }
 
         @Override
         public void connectionClosedOnError(final Exception e) {
-            Utils.runOnUi(() -> {
-                App.bus.post(new LoginBus(XmppHandler.class, LoginBus.ERROR, e.getMessage()));
-            });
             Log.d("xmpp", "ConnectionClosedOn Error!");
         }
 

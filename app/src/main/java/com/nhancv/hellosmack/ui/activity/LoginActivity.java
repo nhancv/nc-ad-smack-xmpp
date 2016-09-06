@@ -71,10 +71,9 @@ public class LoginActivity extends AppCompatActivity {
                     NPreferences.getInstance()
                             .edit()
                             .putString("username", etUser.getText().toString())
-                            .putString("password", etPwd.getText().toString())
-                            .apply();
+                            .putString("password", etPwd.getText().toString());
                 } else {
-                    NPreferences.getInstance().edit().clear().apply();
+                    NPreferences.getInstance().edit().clear();
                 }
 
                 Intent intent = new Intent(LoginActivity.this, MainActivity.class);
@@ -82,7 +81,7 @@ public class LoginActivity extends AppCompatActivity {
                 finish();
                 break;
             case LoginBus.ERROR:
-                NPreferences.getInstance().edit().clear().apply();
+                NPreferences.getInstance().edit().clear();
                 Toast.makeText(LoginActivity.this, (CharSequence) loginBus.data, Toast.LENGTH_SHORT).show();
                 break;
         }
