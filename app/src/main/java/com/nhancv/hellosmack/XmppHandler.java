@@ -3,6 +3,7 @@ package com.nhancv.hellosmack;
 import android.util.Log;
 
 import com.nhancv.hellosmack.bus.LoginBus;
+import com.nhancv.hellosmack.helper.Utils;
 
 import org.jivesoftware.smack.AbstractXMPPConnection;
 import org.jivesoftware.smack.ConnectionConfiguration;

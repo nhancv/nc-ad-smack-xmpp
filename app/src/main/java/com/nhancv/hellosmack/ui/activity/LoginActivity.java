@@ -1,4 +1,4 @@
-package com.nhancv.hellosmack;
+package com.nhancv.hellosmack.ui.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -7,6 +7,9 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.nhancv.hellosmack.App;
+import com.nhancv.hellosmack.R;
+import com.nhancv.hellosmack.XmppHandler;
 import com.nhancv.hellosmack.bus.LoginBus;
 import com.squareup.otto.Subscribe;
 

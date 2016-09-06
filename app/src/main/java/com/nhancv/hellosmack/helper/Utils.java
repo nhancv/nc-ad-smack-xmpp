@@ -1,4 +1,4 @@
-package com.nhancv.hellosmack;
+package com.nhancv.hellosmack.helper;
 
 import android.content.Context;
 import android.os.Handler;
