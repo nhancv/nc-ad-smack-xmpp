@@ -7,4 +7,6 @@
     <color name="navigationBarColor">#000000</color>
     <color name="colorAccent">#c8e8ff</color>
 
+    <color name="online_status">#00e600</color>
+    <color name="offline_status">#ff3333</color>
 </resources>

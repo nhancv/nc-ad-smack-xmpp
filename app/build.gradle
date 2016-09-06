@@ -46,6 +46,7 @@ dependencies {
     apt 'com.jakewharton:butterknife-compiler:8.4.0'
     compile 'io.reactivex:rxandroid:1.2.0'
     compile 'io.reactivex:rxjava:1.1.5'
+    compile 'com.google.code.gson:gson:2.3.1'
     compile 'com.github.nhancv:nc-android-npreferences:v1.1'
 
     compile 'org.igniterealtime.smack:smack-android:4.1.8'

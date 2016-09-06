@@ -5,6 +5,7 @@ import android.util.Log;
 import com.nhancv.hellosmack.bus.LoginBus;
 import com.nhancv.hellosmack.helper.Utils;
 import com.nhancv.hellosmack.listener.ICollections;
+import com.nhancv.hellosmack.model.User;
 
 import org.jivesoftware.smack.AbstractXMPPConnection;
 import org.jivesoftware.smack.ConnectionConfiguration;
@@ -33,15 +34,23 @@ public class XmppHandler {
     private static final String DOMAIN = "192.168.1.59";
     private static final int PORT = 9090;
     private static XmppHandler instance = new XmppHandler();
+
     AbstractXMPPConnection connection;
-    ChatManager chatmanager;
-    Chat newChat;
     XMPPConnectionListener connectionListener = new XMPPConnectionListener();
+    private List<User> userList = new ArrayList<>();
     private String userName = "";
     private String passWord = "";
 
     public static XmppHandler getInstance() {
         return instance;
+    }
+
+    public List<User> getUserList() {
+        return userList;
+    }
+
+    public void setUserList(List<User> userList) {
+        this.userList = userList;
     }
 
     /**
@@ -118,40 +127,49 @@ public class XmppHandler {
     }
 
     /**
-     * Send Msg
+     * Setup for chat
+     *
+     * @param userJID: admin@192.168.1.59
      */
-    public void sendMsg() {
+    public Chat setupChat(String userJID) {
         if (connection.isConnected()) {
-            // Assume we've created an XMPPConnection name "connection"._
-            chatmanager = ChatManager.getInstanceFor(connection);
-            newChat = chatmanager.createChat("admin@192.168.1.59");
-            try {
-                newChat.sendMessage("Howdy!");
-            } catch (SmackException.NotConnectedException e) {
-                e.printStackTrace();
-            }
+            return ChatManager.getInstanceFor(connection).createChat(userJID);
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Setup incoming chat
+     *
+     * @param chatObjectCallBack
+     */
+    public void setupIncomingChat(ICollections.ObjectCallBack<Chat> chatObjectCallBack) {
+        if (connection.isConnected()) {
+            ChatManager chatManager = ChatManager.getInstanceFor(connection);
+            chatManager.addChatListener((chat, createdLocally) -> {
+                if (!createdLocally) {
+                    chatObjectCallBack.callback(chat);
+                }
+            });
         }
     }
 
     /**
      * Get user list
      */
-    public void getUserList(ICollections.ObjectCallBack<List<String>> listItemsCallback) {
+    public void getUserList(ICollections.ObjectCallBack<List<User>> listItemsCallback) {
         Utils.aSyncTask(subscriber -> {
-            List<String> items = new ArrayList<>();
+            userList = new ArrayList<>();
             Roster roster = Roster.getInstanceFor(connection);
             Collection<RosterEntry> entries = roster.getEntries();
             Presence presence;
 
             for (RosterEntry entry : entries) {
                 presence = roster.getPresence(entry.getUser());
-                items.add(entry.getUser());
-                Log.e(TAG, "getUserList: " + entry.getUser());
-                Log.e(TAG, "getUserList: " + presence.getType().name());
-                Log.e(TAG, "getUserList: " + presence.getStatus());
+                userList.add(new User(entry.getUser(), presence));
             }
-            subscriber.onNext(items);
-//                XmppHandler.this.sendMsg();
+            subscriber.onNext(userList);
         }, listItemsCallback::callback);
     }
 

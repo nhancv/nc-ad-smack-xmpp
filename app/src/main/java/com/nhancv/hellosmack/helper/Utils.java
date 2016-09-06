@@ -1,13 +1,13 @@
 package com.nhancv.hellosmack.helper;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.widget.Toast;
 
-import com.nhancv.hellosmack.helper.RxHelper;
 import com.nhancv.hellosmack.listener.ICollections;
 
 import rx.Observable;
@@ -89,6 +89,42 @@ public class Utils {
      */
     public static void showToast(Context context, String msg) {
         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
+    }
+
+
+    /**
+     * Adjust alpha
+     *
+     * @param color
+     * @param factor
+     * @return color was adjusted
+     */
+    public static int adjustAlpha(int color, float factor) {
+        int alpha = Math.round(Color.alpha(color) * factor);
+        int red = Color.red(color);
+        int green = Color.green(color);
+        int blue = Color.blue(color);
+        return Color.argb(alpha, red, green, blue);
+    }
+
+    /**
+     * Convert hex to int
+     *
+     * @param color
+     * @return #FFFF0000 => 0xFFFF0000
+     */
+    public static int convertHex2Int(String color) {
+        return Color.parseColor(color);
+    }
+
+    /**
+     * Convert hex string color without alpha
+     *
+     * @param color
+     * @return
+     */
+    public static String convertInt2Hex(int color) {
+        return "#" + Integer.toHexString(color).toUpperCase().substring(2);
     }
 
 }

@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.XmppHandler;
+import com.nhancv.hellosmack.ui.NDialog;
 import com.nhancv.hellosmack.ui.adapter.UsersAdapter;
 
 import butterknife.BindView;
@@ -47,6 +48,9 @@ public class UsersFragment extends Fragment {
 
         XmppHandler.getInstance().getUserList(listItems -> {
             adapter.setListsItems(listItems);
+        });
+        XmppHandler.getInstance().setupIncomingChat(chat -> {
+            NDialog.showChatDialog(getContext(), chat, null).show();
         });
 
         return view;
