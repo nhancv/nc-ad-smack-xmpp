@@ -12,4 +12,15 @@
     <style name="AppTheme" parent="AppBase">
     </style>
 
+    <style name="ListsItem">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:background">@android:color/white</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">45dp</item>
+        <item name="android:layout_gravity">center_vertical</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:paddingLeft">24dp</item>
+        <item name="android:paddingRight">10dp</item>
+    </style>
+
 </resources>

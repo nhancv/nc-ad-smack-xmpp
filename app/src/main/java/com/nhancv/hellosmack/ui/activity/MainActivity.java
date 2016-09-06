@@ -51,12 +51,11 @@ public class MainActivity extends AppCompatActivity {
         setupViewPager(vViewPager);
         vTabs.setupWithViewPager(vViewPager);
         initNavigationDrawer();
+
     }
 
     public void initNavigationDrawer() {
-
         vNavigation.setNavigationItemSelectedListener(menuItem -> {
-
             int id = menuItem.getItemId();
             switch (id) {
                 case R.id.logout:
@@ -80,7 +79,6 @@ public class MainActivity extends AppCompatActivity {
         tvEmail.setText(XmppHandler.getInstance().getCurrentUser());
 
         ActionBarDrawerToggle actionBarDrawerToggle = new ActionBarDrawerToggle(this, vDrawer, vToolbar, R.string.drawer_open, R.string.drawer_close) {
-
             @Override
             public void onDrawerClosed(View v) {
                 super.onDrawerClosed(v);
@@ -98,7 +96,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        XmppHandler.getInstance().getUserList();
     }
 
     private void setupViewPager(ViewPager viewPager) {

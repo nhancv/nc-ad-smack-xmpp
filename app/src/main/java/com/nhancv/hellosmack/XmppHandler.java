@@ -4,6 +4,7 @@ import android.util.Log;
 
 import com.nhancv.hellosmack.bus.LoginBus;
 import com.nhancv.hellosmack.helper.Utils;
+import com.nhancv.hellosmack.listener.ICollections;
 
 import org.jivesoftware.smack.AbstractXMPPConnection;
 import org.jivesoftware.smack.ConnectionConfiguration;
@@ -20,7 +21,9 @@ import org.jivesoftware.smack.tcp.XMPPTCPConnection;
 import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Created by nhancao on 9/5/16.
@@ -133,21 +136,23 @@ public class XmppHandler {
     /**
      * Get user list
      */
-    public void getUserList() {
+    public void getUserList(ICollections.ObjectCallBack<List<String>> listItemsCallback) {
         Utils.aSyncTask(subscriber -> {
+            List<String> items = new ArrayList<>();
             Roster roster = Roster.getInstanceFor(connection);
             Collection<RosterEntry> entries = roster.getEntries();
             Presence presence;
 
             for (RosterEntry entry : entries) {
                 presence = roster.getPresence(entry.getUser());
+                items.add(entry.getUser());
                 Log.e(TAG, "getUserList: " + entry.getUser());
                 Log.e(TAG, "getUserList: " + presence.getType().name());
                 Log.e(TAG, "getUserList: " + presence.getStatus());
             }
-
-            sendMsg();
-        });
+            subscriber.onNext(items);
+//                XmppHandler.this.sendMsg();
+        }, listItemsCallback::callback);
     }
 
     /**
