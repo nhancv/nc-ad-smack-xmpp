@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -11,6 +12,7 @@ import com.nhancv.hellosmack.App;
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.XmppHandler;
 import com.nhancv.hellosmack.bus.LoginBus;
+import com.nhancv.npreferences.NPreferences;
 import com.squareup.otto.Subscribe;
 
 import butterknife.BindView;
@@ -27,6 +29,8 @@ public class LoginActivity extends AppCompatActivity {
     EditText etUser;
     @BindView(R.id.etPwd)
     EditText etPwd;
+    @BindView(R.id.checkBox)
+    CheckBox checkBox;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +43,11 @@ public class LoginActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         App.bus.register(this);
+        String userName = NPreferences.getInstance().getString("username", null);
+        String passWord = NPreferences.getInstance().getString("password", null);
+        if (userName != null && passWord != null) {
+            XmppHandler.getInstance().init(userName, passWord).createConnection();
+        }
     }
 
     @Override
@@ -49,24 +58,31 @@ public class LoginActivity extends AppCompatActivity {
 
     @OnClick(R.id.btSignin)
     public void onClickLoginBtn(View view) {
-        try {
-            String userName = etUser.getText().toString();
-            String passWord = etPwd.getText().toString();
-            XmppHandler.getInstance().init(userName, passWord).createConnection();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        String userName = etUser.getText().toString();
+        String passWord = etPwd.getText().toString();
+        XmppHandler.getInstance().init(userName, passWord).createConnection();
     }
 
     @Subscribe
     public void loginBusListener(LoginBus loginBus) {
         switch (loginBus.code) {
             case LoginBus.SUCCESS:
+                if (checkBox.isChecked()) {
+                    NPreferences.getInstance()
+                            .edit()
+                            .putString("username", etUser.getText().toString())
+                            .putString("password", etPwd.getText().toString())
+                            .apply();
+                } else {
+                    NPreferences.getInstance().edit().clear().apply();
+                }
+
                 Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                 startActivity(intent);
                 finish();
                 break;
             case LoginBus.ERROR:
+                NPreferences.getInstance().edit().clear().apply();
                 Toast.makeText(LoginActivity.this, (CharSequence) loginBus.data, Toast.LENGTH_SHORT).show();
                 break;
         }
