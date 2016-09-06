@@ -11,47 +11,4 @@
     android:weightSum="1"
     tools:context="com.nhancv.hellosmack.MainActivity">
 
-    <TextView
-        android:id="@+id/lbluser"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="User name"
-        android:textAppearance="?android:attr/textAppearanceLarge" />
-
-    <EditText
-        android:id="@+id/tvUser"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="" />
-
-    <TextView
-        android:id="@+id/lblPwd"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Password"
-        android:textAppearance="?android:attr/textAppearanceLarge" />
-
-    <EditText
-        android:id="@+id/tvPwd"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ems="10"
-        android:inputType="textPassword"
-        android:text="" />
-
-    <CheckBox
-        android:id="@+id/checkBox"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:checked="true"
-        android:text="Remember?" />
-
-    <Button
-        android:id="@+id/btnSignin"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_weight="0.05"
-        android:onClick="onClickLoginBtn"
-        android:text="Sign In" />
 </LinearLayout>
