@@ -177,6 +177,9 @@ public class UsersFragment extends Fragment {
         unbinder.unbind();
     }
 
+    /**
+     * Handle add new contact show dialog
+     */
     public void btAddContactOnClick() {
         addContact.show();
     }

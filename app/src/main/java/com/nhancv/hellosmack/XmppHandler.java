@@ -30,6 +30,9 @@ import org.jivesoftware.smack.roster.packet.RosterPacket;
 import org.jivesoftware.smack.tcp.XMPPTCPConnection;
 import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration;
 import org.jivesoftware.smackx.iqregister.AccountManager;
+import org.jivesoftware.smackx.muc.InvitationListener;
+import org.jivesoftware.smackx.muc.MultiUserChat;
+import org.jivesoftware.smackx.muc.MultiUserChatManager;
 import org.jivesoftware.smackx.search.ReportedData;
 import org.jivesoftware.smackx.search.UserSearchManager;
 import org.jivesoftware.smackx.xdata.Form;
@@ -46,8 +49,8 @@ import rx.functions.Action1;
  */
 public class XmppHandler {
     private static final String TAG = XmppHandler.class.getSimpleName();
-    private static final String DOMAIN = "192.168.1.59";
-    private static final int PORT = 9090;
+    private static final String DOMAIN = "128.199.94.240";
+    private static final int PORT = 5280;
     private static XmppHandler instance = new XmppHandler();
 
     AbstractXMPPConnection connection;
@@ -132,6 +135,28 @@ public class XmppHandler {
         }
     }
     //----------------------------FUNCTION: CHAT HANDLING---------------------------//
+
+    /**
+     * Create group chat
+     *
+     * @param room
+     * @param ownerJid
+     * @return
+     * @throws XMPPException.XMPPErrorException
+     * @throws SmackException
+     */
+    public MultiUserChat createGroupChat(String room, String ownerJid) throws XMPPException.XMPPErrorException, SmackException {
+        MultiUserChat chatRoom = MultiUserChatManager.getInstanceFor(connection).getMultiUserChat(ownerJid);
+        chatRoom.create("test");
+        Form form = chatRoom.getConfigurationForm().createAnswerForm();
+        form.setAnswer("muc#roomconfig_publicroom", true);
+        form.setAnswer("muc#roomconfig_roomname", "room786");
+        form.setAnswer("muc#roomconfig_roomowners", "owners");
+        form.setAnswer("muc#roomconfig_persistentroom", true);
+        chatRoom.sendConfigurationForm(form);
+        MultiUserChatManager.getInstanceFor(connection).addInvitationListener(new GroupChatListener());
+        return chatRoom;
+    }
 
     /**
      * Create connection without user and password support for create new account
@@ -295,6 +320,7 @@ public class XmppHandler {
             e.printStackTrace();
         }
     }
+
     /**
      * Request user
      *
@@ -432,6 +458,19 @@ public class XmppHandler {
             Utils.runOnUi(() -> {
                 App.bus.post(new LoginBus(XmppHandler.class, LoginBus.SUCCESS));
             });
+        }
+    }
+
+    public class GroupChatListener implements InvitationListener {
+        @Override
+        public void invitationReceived(XMPPConnection conn, MultiUserChat room, String inviter, String reason, String password, Message message) {
+            Log.e(TAG, "invitationReceived: Entered invitation handler... " + message);
+            try {
+                room.join(inviter);
+                Log.e(TAG, "invitationReceived: accepted");
+            } catch (SmackException.NoResponseException | XMPPException.XMPPErrorException | SmackException.NotConnectedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
