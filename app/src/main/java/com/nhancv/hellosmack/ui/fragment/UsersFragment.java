@@ -33,7 +33,6 @@ import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import butterknife.OnClick;
 import butterknife.Unbinder;
 
 /**
@@ -178,7 +177,6 @@ public class UsersFragment extends Fragment {
         unbinder.unbind();
     }
 
-    @OnClick(R.id.btAddContact)
     public void btAddContactOnClick() {
         addContact.show();
     }

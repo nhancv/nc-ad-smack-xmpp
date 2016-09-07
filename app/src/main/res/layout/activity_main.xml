@@ -38,6 +38,16 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/btFab"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_margin="15dp"
+            android:src="@android:drawable/ic_menu_more"
+            app:fabSize="normal"
+            app:layout_anchor="@id/vViewPager"
+            app:layout_anchorGravity="bottom|right|end" />
     </android.support.design.widget.CoordinatorLayout>
 
     <android.support.design.widget.NavigationView
