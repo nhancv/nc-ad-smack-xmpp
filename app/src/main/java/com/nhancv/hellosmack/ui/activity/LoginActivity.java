@@ -13,6 +13,8 @@ import com.nhancv.hellosmack.App;
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.XmppHandler;
 import com.nhancv.hellosmack.bus.LoginBus;
+import com.nhancv.hellosmack.helper.Utils;
+import com.nhancv.hellosmack.listener.ICollections;
 import com.nhancv.npreferences.NPreferences;
 import com.squareup.otto.Subscribe;
 
@@ -62,10 +64,30 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     @OnClick(R.id.btSignin)
-    public void onClickLoginBtn(View view) {
+    public void btSigninOnClick() {
         String userName = etUser.getText().toString();
         String passWord = etPwd.getText().toString();
         XmppHandler.getInstance().init(userName, passWord).createConnection();
+    }
+
+    @OnClick(R.id.btSignup)
+    public void btSignupOnClick(View view) {
+        String userName = etUser.getText().toString();
+        String passWord = etPwd.getText().toString();
+        XmppHandler.getInstance().createNewAccount(userName, passWord, new ICollections.CallingListener() {
+            @Override
+            public void success() {
+                XmppHandler.getInstance().terminalConnection();
+                btSigninOnClick();
+            }
+
+            @Override
+            public void error(String msg) {
+                Utils.runOnUi(() -> {
+                    Utils.showToast(LoginActivity.this, msg);
+                });
+            }
+        });
     }
 
     @Subscribe

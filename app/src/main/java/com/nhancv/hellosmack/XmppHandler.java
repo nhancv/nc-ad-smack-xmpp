@@ -22,10 +22,15 @@ import org.jivesoftware.smack.filter.FromMatchesFilter;
 import org.jivesoftware.smack.filter.StanzaTypeFilter;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Presence;
+import org.jivesoftware.smack.packet.XMPPError;
 import org.jivesoftware.smack.roster.Roster;
 import org.jivesoftware.smack.roster.RosterEntry;
 import org.jivesoftware.smack.tcp.XMPPTCPConnection;
 import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration;
+import org.jivesoftware.smackx.iqregister.AccountManager;
+import org.jivesoftware.smackx.search.ReportedData;
+import org.jivesoftware.smackx.search.UserSearchManager;
+import org.jivesoftware.smackx.xdata.Form;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -83,6 +88,7 @@ public class XmppHandler {
         connection = new XMPPTCPConnection(configBuilder.build());
         connection.setPacketReplyTimeout(10000);
         connection.addConnectionListener(connectionListener);
+
         return this;
     }
 
@@ -124,6 +130,116 @@ public class XmppHandler {
         }
     }
     //----------------------------FUNCTION: CHAT HANDLING---------------------------//
+
+    public void createConnectionWithoutCredentials(ICollections.ObjectCallBack<XMPPConnection> callbackListener) {
+        XMPPTCPConnectionConfiguration.Builder configBuilder = XMPPTCPConnectionConfiguration.builder();
+        configBuilder.setSecurityMode(ConnectionConfiguration.SecurityMode.disabled);
+        configBuilder.setDebuggerEnabled(true);
+        configBuilder.setResource("Android");
+        configBuilder.setServiceName(DOMAIN);
+        configBuilder.setPort(PORT);
+        configBuilder.setDebuggerEnabled(false);
+        connection = new XMPPTCPConnection(configBuilder.build());
+        connection.setPacketReplyTimeout(10000);
+        connection.addConnectionListener(new ConnectionListener() {
+            @Override
+            public void connected(XMPPConnection connection) {
+                callbackListener.callback(connection);
+            }
+
+            @Override
+            public void authenticated(XMPPConnection connection, boolean resumed) {
+
+            }
+
+            @Override
+            public void connectionClosed() {
+
+            }
+
+            @Override
+            public void connectionClosedOnError(Exception e) {
+
+            }
+
+            @Override
+            public void reconnectionSuccessful() {
+
+            }
+
+            @Override
+            public void reconnectingIn(int seconds) {
+
+            }
+
+            @Override
+            public void reconnectionFailed(Exception e) {
+
+            }
+        });
+        createConnection();
+    }
+
+    /**
+     * Implement search by username
+     *
+     * @param user
+     */
+    public void searchUser(String user) {
+        try {
+            Log.e(TAG, "searchUser: ");
+            UserSearchManager searchManager = new UserSearchManager(connection);
+            Form searchForm = searchManager.getSearchForm("search." + connection.getServiceName());
+            Form answerForm = searchForm.createAnswerForm();
+            answerForm.setAnswer("Username", true);
+            answerForm.setAnswer("search", user);
+            ReportedData data = searchManager.getSearchResults(answerForm, "search." + connection.getServiceName());
+            if (data.getRows() != null) {
+                for (ReportedData.Row row : data.getRows()) {
+                    for (String value : row.getValues("jid")) {
+                        Log.e(TAG, "test: " + value);
+                    }
+                }
+            }
+        } catch (SmackException.NoResponseException | XMPPException.XMPPErrorException | SmackException.NotConnectedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Create new account
+     *
+     * @param username
+     * @param password
+     */
+    public void createNewAccount(String username, String password, ICollections.CallingListener callingListener) {
+
+        if (connection == null || !connection.isConnected()) {
+            createConnectionWithoutCredentials(conn -> {
+                createNewAccount(username, password, callingListener);
+            });
+        } else {
+            AccountManager accountManager = AccountManager.getInstance(connection);
+            accountManager.sensitiveOperationOverInsecureConnection(true);
+            try {
+                if (accountManager.supportsAccountCreation()) {
+                    accountManager.createAccount(username, password);
+                    callingListener.success();
+                } else {
+                    Log.e(TAG, "createNewAccount: not support create account");
+                    callingListener.error("Server not support create account");
+                }
+            } catch (XMPPException.XMPPErrorException e) {
+                if (e.getXMPPError().getType() == XMPPError.Type.CANCEL) {
+                    callingListener.error("User exists");
+                    Log.e(TAG, "createNewAccount: user exists");
+                }
+            } catch (SmackException.NoResponseException | SmackException.NotConnectedException e) {
+                callingListener.error(e.getMessage());
+            }
+        }
+
+    }
 
     /**
      * Setup listener for stanze packet

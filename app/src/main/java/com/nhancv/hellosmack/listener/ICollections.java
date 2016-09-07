@@ -8,6 +8,20 @@ import android.view.View;
  */
 public class ICollections {
 
+    public interface CallingListener {
+        /**
+         * Success callback
+         */
+        void success();
+
+        /**
+         * Error callback
+         *
+         * @param msg
+         */
+        void error(String msg);
+    }
+
     public interface CallbackListener {
         /**
          * Callback
