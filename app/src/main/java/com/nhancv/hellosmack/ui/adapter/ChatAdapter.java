@@ -34,13 +34,13 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ListsHolder> {
      */
     public void addMessage(Message message) {
         listsItems.add(message);
-        notifyItemInserted(listsItems.size() - 1);
+        notifyItemInserted(listsItems.size());
     }
 
     @Override
     public ChatAdapter.ListsHolder onCreateViewHolder(ViewGroup parent, int viewType) {
 
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.view_user_item, parent, false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.view_chat_item, parent, false);
         return new ListsHolder(view);
 
     }
@@ -48,7 +48,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ListsHolder> {
     @Override
     public void onBindViewHolder(ChatAdapter.ListsHolder holder, int position) {
         Message message = listsItems.get(position);
-        holder.tvFrom.setText(message.getFrom());
+        holder.tvTo.setText(message.getTo());
         holder.tvMsg.setText(message.getBody());
 
     }
@@ -62,8 +62,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ListsHolder> {
 
         @BindView(R.id.vItem)
         View vItem;
-        @BindView(R.id.tvFrom)
-        TextView tvFrom;
+        @BindView(R.id.tvTo)
+        TextView tvTo;
         @BindView(R.id.tvMsg)
         TextView tvMsg;
 

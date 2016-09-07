@@ -19,8 +19,16 @@ public class User {
         return name;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public Presence getPresence() {
         return presence;
+    }
+
+    public void setPresence(Presence presence) {
+        this.presence = presence;
     }
 
     public String getLastMessage() {
@@ -30,4 +38,5 @@ public class User {
     public void setLastMessage(String lastMessage) {
         this.lastMessage = lastMessage;
     }
+
 }

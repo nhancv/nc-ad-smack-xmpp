@@ -5,16 +5,22 @@ import android.util.Log;
 import com.nhancv.hellosmack.bus.LoginBus;
 import com.nhancv.hellosmack.helper.Utils;
 import com.nhancv.hellosmack.listener.ICollections;
+import com.nhancv.hellosmack.listener.XMPPStanzaListener;
 import com.nhancv.hellosmack.model.User;
 
 import org.jivesoftware.smack.AbstractXMPPConnection;
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.SmackException;
+import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.chat.Chat;
 import org.jivesoftware.smack.chat.ChatManager;
+import org.jivesoftware.smack.filter.AndFilter;
+import org.jivesoftware.smack.filter.FromMatchesFilter;
+import org.jivesoftware.smack.filter.StanzaTypeFilter;
+import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.roster.Roster;
 import org.jivesoftware.smack.roster.RosterEntry;
@@ -25,6 +31,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import rx.functions.Action1;
 
 /**
  * Created by nhancao on 9/5/16.
@@ -118,6 +126,53 @@ public class XmppHandler {
     //----------------------------FUNCTION: CHAT HANDLING---------------------------//
 
     /**
+     * Setup listener for stanze packet
+     *
+     * @param packetListeners
+     */
+    public void setupListener(List<XMPPStanzaListener> packetListeners) {
+        for (XMPPStanzaListener listener : packetListeners) {
+            connection.addAsyncStanzaListener(listener.getStanzaListener(), new StanzaTypeFilter(listener.getPacketType()));
+        }
+    }
+
+    /**
+     * Setup chat session
+     *
+     * @param listener
+     * @param userJid
+     */
+    public void createChatSession(StanzaListener listener, String userJid) {
+        connection.addAsyncStanzaListener(listener, new AndFilter(new StanzaTypeFilter(Message.class), new FromMatchesFilter(userJid, false)));
+    }
+
+    /**
+     * Terminal chat session
+     *
+     * @param listener
+     */
+    public void terminalChatSession(StanzaListener listener) {
+        connection.removeAsyncStanzaListener(listener);
+    }
+
+    /**
+     * Request user
+     *
+     * @param userJid
+     * @param type
+     */
+    public void requestUser(String userJid, Presence.Type type) {
+        Presence subscribe = new Presence(type);
+        subscribe.setTo(userJid);
+        try {
+            connection.sendStanza(subscribe);
+        } catch (SmackException.NotConnectedException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    /**
      * Get current user
      *
      * @return
@@ -149,7 +204,9 @@ public class XmppHandler {
             ChatManager chatManager = ChatManager.getInstanceFor(connection);
             chatManager.addChatListener((chat, createdLocally) -> {
                 if (!createdLocally) {
-                    chatObjectCallBack.callback(chat);
+                    Utils.runOnUi(() -> {
+                        chatObjectCallBack.callback(chat);
+                    });
                 }
             });
         }
@@ -158,7 +215,7 @@ public class XmppHandler {
     /**
      * Get user list
      */
-    public void getUserList(ICollections.ObjectCallBack<List<User>> listItemsCallback) {
+    public void getUserList(ICollections.ObjectCallBack<Roster> listItemsCallback) {
         Utils.aSyncTask(subscriber -> {
             userList = new ArrayList<>();
             Roster roster = Roster.getInstanceFor(connection);
@@ -169,8 +226,27 @@ public class XmppHandler {
                 presence = roster.getPresence(entry.getUser());
                 userList.add(new User(entry.getUser(), presence));
             }
-            subscriber.onNext(userList);
-        }, listItemsCallback::callback);
+            subscriber.onNext(roster);
+        }, new Action1<Roster>() {
+            @Override
+            public void call(Roster roster) {
+                listItemsCallback.callback(roster);
+            }
+        });
+    }
+
+    /**
+     * Parse address to userJid
+     *
+     * @param address: test2@192.168.1.59/DESKTOP-IUBFVPO
+     * @return test2@192.168.1.59
+     */
+    public String parseUserJid(String address) {
+        int index = address.indexOf("/");
+        if (index != -1) {
+            address = address.substring(0, index);
+        }
+        return address;
     }
 
     /**
@@ -218,4 +294,5 @@ public class XmppHandler {
             });
         }
     }
+
 }
