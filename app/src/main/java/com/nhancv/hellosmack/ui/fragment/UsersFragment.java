@@ -2,12 +2,15 @@ package com.nhancv.hellosmack.ui.fragment;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.InputType;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.XmppHandler;
@@ -30,6 +33,7 @@ import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 import butterknife.Unbinder;
 
 /**
@@ -40,6 +44,7 @@ public class UsersFragment extends Fragment {
     @BindView(R.id.vListsItems)
     RecyclerView vListsItems;
     UsersAdapter adapter;
+    AlertDialog addContact;
 
     private Unbinder unbinder;
 
@@ -54,6 +59,9 @@ public class UsersFragment extends Fragment {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_users, container, false);
         unbinder = ButterKnife.bind(this, view);
+
+        initDialogAddContact();
+
         LinearLayoutManager llm = new LinearLayoutManager(getContext());
         llm.setOrientation(LinearLayoutManager.VERTICAL);
         vListsItems.setHasFixedSize(true);
@@ -168,6 +176,34 @@ public class UsersFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         unbinder.unbind();
+    }
+
+    @OnClick(R.id.btAddContact)
+    public void btAddContactOnClick() {
+        addContact.show();
+    }
+
+    /**
+     * Init dialog add new contact
+     */
+    private void initDialogAddContact() {
+        if (addContact == null) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+            builder.setTitle("Add contact");
+
+            final EditText input = new EditText(getContext());
+            input.setInputType(InputType.TYPE_CLASS_TEXT);
+            builder.setView(input);
+
+            // Set up the buttons
+            builder.setPositiveButton("OK", (dialog, which) -> {
+                XmppHandler.getInstance().requestUser(input.getText().toString(), Presence.Type.subscribe);
+            });
+            builder.setNegativeButton("Cancel", (dialog, which) -> {
+                dialog.cancel();
+            });
+            addContact = builder.create();
+        }
     }
 
 }

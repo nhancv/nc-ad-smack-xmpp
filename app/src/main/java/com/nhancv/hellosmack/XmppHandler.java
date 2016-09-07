@@ -131,6 +131,11 @@ public class XmppHandler {
     }
     //----------------------------FUNCTION: CHAT HANDLING---------------------------//
 
+    /**
+     * Create connection without user and password support for create new account
+     *
+     * @param callbackListener
+     */
     public void createConnectionWithoutCredentials(ICollections.ObjectCallBack<XMPPConnection> callbackListener) {
         XMPPTCPConnectionConfiguration.Builder configBuilder = XMPPTCPConnectionConfiguration.builder();
         configBuilder.setSecurityMode(ConnectionConfiguration.SecurityMode.disabled);
