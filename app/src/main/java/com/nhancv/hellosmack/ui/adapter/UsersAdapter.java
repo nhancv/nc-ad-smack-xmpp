@@ -3,6 +3,7 @@ package com.nhancv.hellosmack.ui.adapter;
 import android.content.Intent;
 import android.graphics.drawable.GradientDrawable;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,6 +11,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.nhancv.hellosmack.R;
+import com.nhancv.hellosmack.XmppHandler;
 import com.nhancv.hellosmack.helper.Utils;
 import com.nhancv.hellosmack.model.User;
 import com.nhancv.hellosmack.ui.activity.ChatActivity;
@@ -57,6 +59,23 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.ListsHolder>
             Intent intent = new Intent(v.getContext(), ChatActivity.class);
             intent.putExtra("address", user.getPresence().getFrom());
             v.getContext().startActivity(intent);
+        });
+        holder.vItem.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
+                builder.setTitle("Remove contact");
+                builder.setMessage("Are you sure to remove this contact?");
+                // Set up the buttons
+                builder.setPositiveButton("OK", (dialog, which) -> {
+                    XmppHandler.getInstance().removeRoster(user.getName());
+                });
+                builder.setNegativeButton("Cancel", (dialog, which) -> {
+                    dialog.cancel();
+                });
+                builder.show();
+                return true;
+            }
         });
         int color = ContextCompat.getColor(holder.vItem.getContext(), R.color.offline_status);
         if (user.getPresence().isAvailable()) {

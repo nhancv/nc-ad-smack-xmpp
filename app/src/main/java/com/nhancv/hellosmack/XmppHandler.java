@@ -20,11 +20,13 @@ import org.jivesoftware.smack.chat.ChatManager;
 import org.jivesoftware.smack.filter.AndFilter;
 import org.jivesoftware.smack.filter.FromMatchesFilter;
 import org.jivesoftware.smack.filter.StanzaTypeFilter;
+import org.jivesoftware.smack.packet.IQ;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.packet.XMPPError;
 import org.jivesoftware.smack.roster.Roster;
 import org.jivesoftware.smack.roster.RosterEntry;
+import org.jivesoftware.smack.roster.packet.RosterPacket;
 import org.jivesoftware.smack.tcp.XMPPTCPConnection;
 import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration;
 import org.jivesoftware.smackx.iqregister.AccountManager;
@@ -276,6 +278,23 @@ public class XmppHandler {
         connection.removeAsyncStanzaListener(listener);
     }
 
+    /**
+     * Remove roster
+     *
+     * @param userJid
+     */
+    public void removeRoster(String userJid) {
+        RosterPacket packet = new RosterPacket();
+        packet.setType(IQ.Type.set);
+        RosterPacket.Item item = new RosterPacket.Item(userJid, null);
+        item.setItemType(RosterPacket.ItemType.remove);
+        packet.addRosterItem(item);
+        try {
+            connection.sendStanza(packet);
+        } catch (SmackException.NotConnectedException e) {
+            e.printStackTrace();
+        }
+    }
     /**
      * Request user
      *
