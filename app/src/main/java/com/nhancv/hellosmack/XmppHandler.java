@@ -49,8 +49,9 @@ import rx.functions.Action1;
  */
 public class XmppHandler {
     private static final String TAG = XmppHandler.class.getSimpleName();
-    private static final String DOMAIN = "128.199.94.240";
-    private static final int PORT = 5280;
+    private static final String HOST = "local.beesightsoft.com";
+    private static final String DOMAIN = "local.beesightsoft.com";
+    private static final int PORT = 7008;
     private static XmppHandler instance = new XmppHandler();
 
     AbstractXMPPConnection connection;
@@ -88,6 +89,7 @@ public class XmppHandler {
         configBuilder.setDebuggerEnabled(true);
         configBuilder.setResource("Android");
         configBuilder.setServiceName(DOMAIN);
+        configBuilder.setHost(HOST);
         configBuilder.setPort(PORT);
         configBuilder.setDebuggerEnabled(false);
         connection = new XMPPTCPConnection(configBuilder.build());
@@ -169,6 +171,7 @@ public class XmppHandler {
         configBuilder.setDebuggerEnabled(true);
         configBuilder.setResource("Android");
         configBuilder.setServiceName(DOMAIN);
+        configBuilder.setHost(HOST);
         configBuilder.setPort(PORT);
         configBuilder.setDebuggerEnabled(false);
         connection = new XMPPTCPConnection(configBuilder.build());
