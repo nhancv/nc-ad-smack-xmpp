@@ -1,117 +1,136 @@
 package com.nhancv.hellosmack.ui.activity;
 
 import android.content.Intent;
-import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-import android.view.View;
+import android.util.Log;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.Toast;
 
-import com.nhancv.hellosmack.App;
 import com.nhancv.hellosmack.R;
-import com.nhancv.hellosmack.XmppHandler;
-import com.nhancv.hellosmack.bus.LoginBus;
-import com.nhancv.hellosmack.helper.Utils;
-import com.nhancv.hellosmack.listener.ICollections;
+import com.nhancv.hellosmack.helper.NUtil;
+import com.nhancv.hellosmack.xmpp.XmppListener;
+import com.nhancv.hellosmack.xmpp.XmppPresenter;
 import com.nhancv.npreferences.NPreferences;
-import com.squareup.otto.Subscribe;
 
-import butterknife.BindView;
-import butterknife.ButterKnife;
-import butterknife.OnClick;
+import org.androidannotations.annotations.AfterViews;
+import org.androidannotations.annotations.Click;
+import org.androidannotations.annotations.EActivity;
+import org.androidannotations.annotations.ViewById;
+import org.jivesoftware.smack.SmackException;
+import org.jivesoftware.smack.XMPPException;
+
+import java.io.IOException;
 
 /**
  * Created by Nhan Cao on 06-Sep-16.
  */
+
+@EActivity(R.layout.activity_login)
 public class LoginActivity extends AppCompatActivity {
 
     private static final String TAG = LoginActivity.class.getSimpleName();
-    @BindView(R.id.etUser)
+    @ViewById(R.id.etUser)
     EditText etUser;
-    @BindView(R.id.etPwd)
+    @ViewById(R.id.etPwd)
     EditText etPwd;
-    @BindView(R.id.checkBox)
+    @ViewById(R.id.checkBox)
     CheckBox checkBox;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_login);
-        ButterKnife.bind(this);
+    @AfterViews
+    void initView() {
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setTitle("Login");
         }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        App.bus.register(this);
         String userName = NPreferences.getInstance().getString("username", null);
         String passWord = NPreferences.getInstance().getString("password", null);
         if (userName != null && passWord != null) {
-            XmppHandler.getInstance().init(userName, passWord).createConnection();
+            login(userName, passWord);
         }
     }
 
-    @Override
-    protected void onPause() {
-        App.bus.unregister(this);
-        super.onPause();
-    }
-
-    @OnClick(R.id.btSignin)
-    public void btSigninOnClick() {
+    @Click(R.id.btSignin)
+    void btSigninOnClick() {
         String userName = etUser.getText().toString();
         String passWord = etPwd.getText().toString();
-        XmppHandler.getInstance().init(userName, passWord).createConnection();
+
+        login(userName, passWord);
     }
 
-    @OnClick(R.id.btSignup)
-    public void btSignupOnClick(View view) {
-        String userName = etUser.getText().toString();
-        String passWord = etPwd.getText().toString();
-        XmppHandler.getInstance().createNewAccount(userName, passWord, new ICollections.CallingListener() {
-            @Override
-            public void success() {
-                XmppHandler.getInstance().terminalConnection();
-                btSigninOnClick();
-            }
+    private void login(String userName, String passWord) {
+        NUtil.aSyncTask(subscriber -> {
+            try {
+                XmppPresenter.getInstance().login(userName, passWord, new XmppListener.IXmppLoginListener() {
+                    @Override
+                    public void loginSuccess() {
+                        Log.e(TAG, "loginSuccess: ");
+                        if (checkBox.isChecked()) {
+                            NPreferences.getInstance()
+                                    .edit()
+                                    .putString("username", etUser.getText().toString())
+                                    .putString("password", etPwd.getText().toString());
+                        } else {
+                            NPreferences.getInstance().edit().clear();
+                        }
 
-            @Override
-            public void error(String msg) {
-                Utils.runOnUi(() -> {
-                    Utils.showToast(LoginActivity.this, msg);
+                        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                        startActivity(intent);
+                        finish();
+                    }
+
+                    @Override
+                    public void loginError(Exception ex) {
+                        Log.e(TAG, "loginError: " + ex);
+                        showToast(ex.getMessage());
+                        NPreferences.getInstance().edit().clear();
+                    }
+                });
+            } catch (XMPPException | IOException | SmackException e) {
+                e.printStackTrace();
+                NUtil.runOnUi(() -> {
+                    showToast(e.getMessage());
                 });
             }
         });
     }
 
-    @Subscribe
-    public void loginBusListener(LoginBus loginBus) {
-        switch (loginBus.code) {
-            case LoginBus.SUCCESS:
-                if (checkBox.isChecked()) {
-                    NPreferences.getInstance()
-                            .edit()
-                            .putString("username", etUser.getText().toString())
-                            .putString("password", etPwd.getText().toString());
-                } else {
-                    NPreferences.getInstance().edit().clear();
-                }
+    @Click(R.id.btSignup)
+    void btSignupOnClick() {
+        String userName = etUser.getText().toString();
+        String passWord = etPwd.getText().toString();
 
-                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                startActivity(intent);
-                finish();
-                break;
-            case LoginBus.ERROR:
-                NPreferences.getInstance().edit().clear();
-                Toast.makeText(LoginActivity.this, (CharSequence) loginBus.data, Toast.LENGTH_SHORT).show();
-                break;
-        }
+        NUtil.aSyncTask(subscriber -> {
+            try {
+                XmppPresenter.getInstance().createUser(userName, passWord, new XmppListener.IXmppCreateListener() {
+                    @Override
+                    public void createSuccess() throws SmackException.NotConnectedException {
+                        Log.e(TAG, "createSuccess: ");
+                        XmppPresenter.getInstance().getXmppConnector().terminalConnection();
+                        NUtil.runOnUi(() -> {
+                            btSigninOnClick();
+                        });
+                    }
+
+                    @Override
+                    public void createError(Exception ex) {
+                        Log.e(TAG, "createError: " + ex);
+                        showToast(ex.getMessage());
+                    }
+                });
+            } catch (XMPPException | IOException | SmackException e) {
+                e.printStackTrace();
+                NUtil.runOnUi(() -> {
+                    showToast(e.getMessage());
+                });
+            }
+        });
+    }
+
+    void showToast(String msg) {
+        NUtil.runOnUi(() -> {
+            NUtil.showToast(this, msg);
+        });
     }
 
 }

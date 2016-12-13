@@ -14,7 +14,7 @@ import android.widget.EditText;
 
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.XmppHandler;
-import com.nhancv.hellosmack.helper.Utils;
+import com.nhancv.hellosmack.helper.NUtil;
 import com.nhancv.hellosmack.listener.XMPPStanzaListener;
 import com.nhancv.hellosmack.model.User;
 import com.nhancv.hellosmack.ui.adapter.UsersAdapter;
@@ -100,7 +100,7 @@ public class UsersFragment extends Fragment {
                         break;
                     }
                 }
-                Utils.runOnUi(() -> {
+                NUtil.runOnUi(() -> {
                     adapter.setListsItems(XmppHandler.getInstance().getUserList());
                 });
             }
@@ -116,7 +116,7 @@ public class UsersFragment extends Fragment {
                         Presence presence = roster.getPresence(item);
                         XmppHandler.getInstance().getUserList().add(new User(item, presence));
                     }
-                    Utils.runOnUi(() -> {
+                    NUtil.runOnUi(() -> {
                         adapter.setListsItems(XmppHandler.getInstance().getUserList());
                     });
                 }
@@ -132,7 +132,7 @@ public class UsersFragment extends Fragment {
                             }
                         }
                     }
-                    Utils.runOnUi(() -> {
+                    NUtil.runOnUi(() -> {
                         adapter.setListsItems(XmppHandler.getInstance().getUserList());
                     });
                 }
@@ -148,14 +148,14 @@ public class UsersFragment extends Fragment {
                             }
                         }
                     }
-                    Utils.runOnUi(() -> {
+                    NUtil.runOnUi(() -> {
                         adapter.setListsItems(XmppHandler.getInstance().getUserList());
                     });
                 }
 
                 @Override
                 public void presenceChanged(Presence presence) {
-                    Utils.runOnUi(() -> {
+                    NUtil.runOnUi(() -> {
                         for (User user : XmppHandler.getInstance().getUserList()) {
                             if (presence.getFrom().contains(user.getName())) {
                                 user.setPresence(presence);

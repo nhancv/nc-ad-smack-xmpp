@@ -12,7 +12,7 @@ import android.widget.TextView;
 
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.XmppHandler;
-import com.nhancv.hellosmack.helper.Utils;
+import com.nhancv.hellosmack.helper.NUtil;
 import com.nhancv.hellosmack.model.User;
 import com.nhancv.hellosmack.ui.activity.ChatActivity;
 
@@ -83,7 +83,7 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.ListsHolder>
         }
         GradientDrawable gd = (GradientDrawable) holder.vStatus.getBackground().getCurrent();
         gd.setColor(color);
-        gd.setStroke(5, Utils.adjustAlpha(color, 0.5f));
+        gd.setStroke(5, NUtil.adjustAlpha(color, 0.5f));
     }
 
     @Override

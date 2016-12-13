@@ -9,7 +9,7 @@ import android.widget.TextView;
 
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.XmppHandler;
-import com.nhancv.hellosmack.helper.Utils;
+import com.nhancv.hellosmack.helper.NUtil;
 import com.nhancv.hellosmack.ui.adapter.ChatAdapter;
 
 import org.jivesoftware.smack.SmackException;
@@ -59,7 +59,7 @@ public class ChatActivity extends AppCompatActivity {
         chatSessionListener = packet -> {
             if (packet instanceof Message) {
                 Message message = (Message) packet;
-                Utils.runOnUi(() -> {
+                NUtil.runOnUi(() -> {
                     adapter.addMessage(message);
                     vListsItems.smoothScrollToPosition(adapter.getItemCount());
                 });

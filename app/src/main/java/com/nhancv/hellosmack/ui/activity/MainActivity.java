@@ -19,7 +19,7 @@ import android.widget.TextView;
 
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.XmppHandler;
-import com.nhancv.hellosmack.helper.Utils;
+import com.nhancv.hellosmack.helper.NUtil;
 import com.nhancv.hellosmack.ui.fragment.GroupFragment;
 import com.nhancv.hellosmack.ui.fragment.UsersFragment;
 import com.nhancv.npreferences.NPreferences;
@@ -67,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
             switch (id) {
                 case R.id.logout:
                     vDrawer.closeDrawers();
-                    Utils.aSyncTask(subscriber -> {
+                    NUtil.aSyncTask(subscriber -> {
                         //Clear preference
                         NPreferences.getInstance().edit().clear();
                         //Terminal current connection

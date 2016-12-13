@@ -22,6 +22,7 @@
         android:id="@+id/etUser"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:hint="admin"
         android:text="" />
 
     <TextView
@@ -36,6 +37,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"
+        android:hint="123321"
         android:inputType="textPassword"
         android:text="" />
 

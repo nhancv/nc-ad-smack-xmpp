@@ -3,7 +3,7 @@ package com.nhancv.hellosmack;
 import android.util.Log;
 
 import com.nhancv.hellosmack.bus.LoginBus;
-import com.nhancv.hellosmack.helper.Utils;
+import com.nhancv.hellosmack.helper.NUtil;
 import com.nhancv.hellosmack.listener.ICollections;
 import com.nhancv.hellosmack.listener.XMPPStanzaListener;
 import com.nhancv.hellosmack.model.User;
@@ -114,7 +114,7 @@ public class XmppHandler {
      * Create connection
      */
     public void createConnection() {
-        Utils.aSyncTask(subscriber -> {
+        NUtil.aSyncTask(subscriber -> {
             try {
                 connection.connect();
             } catch (SmackException | XMPPException | IOException e) {
@@ -131,7 +131,7 @@ public class XmppHandler {
             connection.login(userName, passWord);
         } catch (XMPPException | SmackException | IOException e) {
             e.printStackTrace();
-            Utils.runOnUi(() -> {
+            NUtil.runOnUi(() -> {
                 App.bus.post(new LoginBus(XmppHandler.class, LoginBus.ERROR, e.getMessage()));
             });
         }
@@ -373,7 +373,7 @@ public class XmppHandler {
             ChatManager chatManager = ChatManager.getInstanceFor(connection);
             chatManager.addChatListener((chat, createdLocally) -> {
                 if (!createdLocally) {
-                    Utils.runOnUi(() -> {
+                    NUtil.runOnUi(() -> {
                         chatObjectCallBack.callback(chat);
                     });
                 }
@@ -385,7 +385,7 @@ public class XmppHandler {
      * Get user list
      */
     public void getUserList(ICollections.ObjectCallBack<Roster> listItemsCallback) {
-        Utils.aSyncTask(subscriber -> {
+        NUtil.aSyncTask(subscriber -> {
             userList = new ArrayList<>();
             Roster roster = Roster.getInstanceFor(connection);
             Collection<RosterEntry> entries = roster.getEntries();
@@ -458,7 +458,7 @@ public class XmppHandler {
         @Override
         public void authenticated(XMPPConnection arg0, boolean arg1) {
             Log.d("xmpp", "Authenticated!");
-            Utils.runOnUi(() -> {
+            NUtil.runOnUi(() -> {
                 App.bus.post(new LoginBus(XmppHandler.class, LoginBus.SUCCESS));
             });
         }
