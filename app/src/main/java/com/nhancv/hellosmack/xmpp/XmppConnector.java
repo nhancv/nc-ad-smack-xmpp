@@ -67,7 +67,7 @@ public class XmppConnector implements IXmppConnector {
         configBuilder.setDebuggerEnabled(false);
 
         connection = new XMPPTCPConnection(configBuilder.build());
-        connection.setPacketReplyTimeout(10000);
+        connection.setPacketReplyTimeout(5000);
         connection.addConnectionListener(connectionListener);
     }
 

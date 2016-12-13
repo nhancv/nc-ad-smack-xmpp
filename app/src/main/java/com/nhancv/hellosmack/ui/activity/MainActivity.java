@@ -1,7 +1,6 @@
 package com.nhancv.hellosmack.ui.activity;
 
 import android.content.Intent;
-import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.TabLayout;
@@ -18,47 +17,46 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.nhancv.hellosmack.R;
-import com.nhancv.hellosmack.XmppHandler;
 import com.nhancv.hellosmack.helper.NUtil;
 import com.nhancv.hellosmack.ui.fragment.GroupFragment;
 import com.nhancv.hellosmack.ui.fragment.UsersFragment;
+import com.nhancv.hellosmack.xmpp.XmppPresenter;
 import com.nhancv.npreferences.NPreferences;
+
+import org.androidannotations.annotations.AfterViews;
+import org.androidannotations.annotations.Click;
+import org.androidannotations.annotations.EActivity;
+import org.androidannotations.annotations.ViewById;
+import org.jivesoftware.smack.SmackException;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import butterknife.BindView;
-import butterknife.ButterKnife;
-import butterknife.OnClick;
-
+@EActivity(R.layout.activity_main)
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
-    @BindView(R.id.vToolbar)
+    @ViewById(R.id.vToolbar)
     Toolbar vToolbar;
-    @BindView(R.id.vTabs)
+    @ViewById(R.id.vTabs)
     TabLayout vTabs;
-    @BindView(R.id.vViewPager)
+    @ViewById(R.id.vViewPager)
     ViewPager vViewPager;
-    @BindView(R.id.vDrawer)
+    @ViewById(R.id.vDrawer)
     DrawerLayout vDrawer;
-    @BindView(R.id.vNavigation)
+    @ViewById(R.id.vNavigation)
     NavigationView vNavigation;
-    @BindView(R.id.btFab)
+    @ViewById(R.id.btFab)
     FloatingActionButton btFab;
     ViewPagerAdapter adapter;
     int pageSelected = 0;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        ButterKnife.bind(this);
+    @AfterViews
+    void initView() {
         setSupportActionBar(vToolbar);
         setupViewPager(vViewPager);
         vTabs.setupWithViewPager(vViewPager);
         initNavigationDrawer();
-
     }
 
     public void initNavigationDrawer() {
@@ -71,7 +69,11 @@ public class MainActivity extends AppCompatActivity {
                         //Clear preference
                         NPreferences.getInstance().edit().clear();
                         //Terminal current connection
-                        XmppHandler.getInstance().terminalConnection();
+                        try {
+                            XmppPresenter.getInstance().getXmppConnector().terminalConnection();
+                        } catch (SmackException.NotConnectedException e) {
+                            e.printStackTrace();
+                        }
                         //Transmit to login screen
                         Intent intent = new Intent(MainActivity.this, LoginActivity.class);
                         startActivity(intent);
@@ -83,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
         });
         View header = vNavigation.getHeaderView(0);
         TextView tvEmail = (TextView) header.findViewById(R.id.tvEmail);
-        tvEmail.setText(XmppHandler.getInstance().getCurrentUser());
+        tvEmail.setText(XmppPresenter.getInstance().getXmppConnector().getConnection().getUser());
 
         ActionBarDrawerToggle actionBarDrawerToggle = new ActionBarDrawerToggle(this, vDrawer, vToolbar, R.string.drawer_open, R.string.drawer_close) {
             @Override
@@ -98,11 +100,6 @@ public class MainActivity extends AppCompatActivity {
         };
         vDrawer.addDrawerListener(actionBarDrawerToggle);
         actionBarDrawerToggle.syncState();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
     }
 
     private void setupViewPager(ViewPager viewPager) {
@@ -138,8 +135,8 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    @OnClick(R.id.btFab)
-    public void btFagOnClick() {
+    @Click(R.id.btFab)
+    void btFagOnClick() {
         Fragment fragment = adapter.getItem(pageSelected);
         if (fragment instanceof UsersFragment) {
             ((UsersFragment) fragment).btAddContactOnClick();

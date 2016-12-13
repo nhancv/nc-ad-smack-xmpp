@@ -1,6 +1,5 @@
 package com.nhancv.hellosmack.ui.activity;
 
-import android.content.Intent;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -74,8 +73,7 @@ public class LoginActivity extends AppCompatActivity {
                             NPreferences.getInstance().edit().clear();
                         }
 
-                        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                        startActivity(intent);
+                        MainActivity_.intent(LoginActivity.this).start();
                         finish();
                     }
 
