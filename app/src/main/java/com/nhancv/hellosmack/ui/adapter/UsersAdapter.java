@@ -11,10 +11,12 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.nhancv.hellosmack.R;
-import com.nhancv.hellosmack.XmppHandler;
 import com.nhancv.hellosmack.helper.NUtil;
 import com.nhancv.hellosmack.model.User;
 import com.nhancv.hellosmack.ui.activity.ChatActivity;
+import com.nhancv.hellosmack.xmpp.XmppPresenter;
+
+import org.jivesoftware.smack.SmackException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,7 +70,11 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.ListsHolder>
                 builder.setMessage("Are you sure to remove this contact?");
                 // Set up the buttons
                 builder.setPositiveButton("OK", (dialog, which) -> {
-                    XmppHandler.getInstance().removeRoster(user.getName());
+                    try {
+                        XmppPresenter.getInstance().sendUnFriendRequest(user.getName());
+                    } catch (SmackException.NotConnectedException e) {
+                        e.printStackTrace();
+                    }
                 });
                 builder.setNegativeButton("Cancel", (dialog, which) -> {
                     dialog.cancel();

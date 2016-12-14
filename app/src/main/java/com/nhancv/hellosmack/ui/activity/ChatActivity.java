@@ -8,14 +8,15 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.nhancv.hellosmack.R;
-import com.nhancv.hellosmack.XmppHandler;
 import com.nhancv.hellosmack.helper.NUtil;
 import com.nhancv.hellosmack.ui.adapter.ChatAdapter;
+import com.nhancv.hellosmack.xmpp.XmppPresenter;
 
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.chat.Chat;
 import org.jivesoftware.smack.packet.Message;
+import org.jxmpp.util.XmppStringUtils;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -55,7 +56,7 @@ public class ChatActivity extends AppCompatActivity {
 
         address = getIntent().getStringExtra("address");
 
-        chat = XmppHandler.getInstance().setupChat(address);
+        chat = XmppPresenter.getInstance().preparingChat(address);
         chatSessionListener = packet -> {
             if (packet instanceof Message) {
                 Message message = (Message) packet;
@@ -65,9 +66,9 @@ public class ChatActivity extends AppCompatActivity {
                 });
             }
         };
-        XmppHandler.getInstance().createChatSession(chatSessionListener, address);
+        XmppPresenter.getInstance().openChatSession(chatSessionListener, address);
         if (chat != null) {
-            tvTitle.setText(XmppHandler.getInstance().parseUserJid(address));
+            tvTitle.setText(XmppStringUtils.parseBareJid(address));
         }
     }
 
@@ -91,7 +92,7 @@ public class ChatActivity extends AppCompatActivity {
             chat = null;
         }
         if (chatSessionListener != null) {
-            XmppHandler.getInstance().terminalChatSession(chatSessionListener);
+            XmppPresenter.getInstance().closeChatSession(chatSessionListener);
         }
         finish();
     }
@@ -103,7 +104,7 @@ public class ChatActivity extends AppCompatActivity {
             chat = null;
         }
         if (chatSessionListener != null) {
-            XmppHandler.getInstance().terminalChatSession(chatSessionListener);
+            XmppPresenter.getInstance().closeChatSession(chatSessionListener);
         }
         super.onStop();
     }

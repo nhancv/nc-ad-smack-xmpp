@@ -118,7 +118,6 @@ public class MainActivity extends AppCompatActivity {
                 pageSelected = position;
                 switch (position) {
                     case 0:
-                        Log.e(TAG, "onPageSelected: " + pageSelected);
                         btFab.show();
                         break;
 

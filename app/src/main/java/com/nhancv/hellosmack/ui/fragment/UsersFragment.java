@@ -13,23 +13,19 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 
 import com.nhancv.hellosmack.R;
-import com.nhancv.hellosmack.XmppHandler;
 import com.nhancv.hellosmack.helper.NUtil;
 import com.nhancv.hellosmack.listener.XMPPStanzaListener;
 import com.nhancv.hellosmack.model.User;
 import com.nhancv.hellosmack.ui.adapter.UsersAdapter;
+import com.nhancv.hellosmack.xmpp.XmppPresenter;
 
 import org.jivesoftware.smack.SmackException;
-import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Presence;
-import org.jivesoftware.smack.packet.Stanza;
 import org.jivesoftware.smack.roster.Roster;
 import org.jivesoftware.smack.roster.RosterListener;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -48,11 +44,6 @@ public class UsersFragment extends Fragment {
     private Unbinder unbinder;
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-    }
-
-    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
@@ -68,63 +59,42 @@ public class UsersFragment extends Fragment {
         adapter = new UsersAdapter();
         vListsItems.setAdapter(adapter);
 
-        List<XMPPStanzaListener> stanzaListener = new ArrayList<>();
-        stanzaListener.add(new XMPPStanzaListener(new StanzaListener() {
-            @Override
-            public void processPacket(Stanza packet) throws SmackException.NotConnectedException {
-                if (packet instanceof Presence) {
-                    Log.e(TAG, "Presence: " + packet);
-                    Presence presence = (Presence) packet;
-                    if (presence.getType() != null) {
-                        switch (presence.getType()) {
-                            case subscribe:
-                                XmppHandler.getInstance().requestUser(presence.getFrom(), Presence.Type.subscribed);
-                                XmppHandler.getInstance().requestUser(presence.getFrom(), Presence.Type.subscribe);
-                                break;
-                            case unsubscribe:
-                                XmppHandler.getInstance().requestUser(presence.getFrom(), Presence.Type.unsubscribed);
-                                break;
-
-                        }
-                    }
-                }
-            }
-        }, Stanza.class));
-        stanzaListener.add(new XMPPStanzaListener(packet -> {
+        XmppPresenter.getInstance().setAutoAcceptSubscribe();
+        XmppPresenter.getInstance().addAsyncStanzaListener(new XMPPStanzaListener(packet -> {
             if (packet instanceof Message) {
                 Log.e(TAG, "Message: " + packet);
                 Message message = (Message) packet;
-                for (User user : XmppHandler.getInstance().getUserList()) {
+                for (User user : XmppPresenter.getInstance().getUserList()) {
                     if (message.getFrom().contains(user.getName())) {
                         user.setLastMessage(message.getBody());
                         break;
                     }
                 }
                 NUtil.runOnUi(() -> {
-                    adapter.setListsItems(XmppHandler.getInstance().getUserList());
+                    adapter.setListsItems(XmppPresenter.getInstance().getUserList());
                 });
             }
         }, Message.class));
-        XmppHandler.getInstance().setupListener(stanzaListener);
-        XmppHandler.getInstance().getUserList(roster -> {
-            adapter.setListsItems(XmppHandler.getInstance().getUserList());
+
+        XmppPresenter.getInstance().getUserList(roster -> {
+            adapter.setListsItems(XmppPresenter.getInstance().getUserList());
             roster.setSubscriptionMode(Roster.SubscriptionMode.manual);
             roster.addRosterListener(new RosterListener() {
                 @Override
                 public void entriesAdded(Collection<String> addresses) {
                     for (String item : addresses) {
                         Presence presence = roster.getPresence(item);
-                        XmppHandler.getInstance().getUserList().add(new User(item, presence));
+                        XmppPresenter.getInstance().getUserList().add(new User(item, presence));
                     }
                     NUtil.runOnUi(() -> {
-                        adapter.setListsItems(XmppHandler.getInstance().getUserList());
+                        adapter.setListsItems(XmppPresenter.getInstance().getUserList());
                     });
                 }
 
                 @Override
                 public void entriesUpdated(Collection<String> addresses) {
                     for (String item : addresses) {
-                        for (User user : XmppHandler.getInstance().getUserList()) {
+                        for (User user : XmppPresenter.getInstance().getUserList()) {
                             if (item.contains(user.getName())) {
                                 Presence presence = roster.getPresence(item);
                                 user.setPresence(presence);
@@ -133,36 +103,36 @@ public class UsersFragment extends Fragment {
                         }
                     }
                     NUtil.runOnUi(() -> {
-                        adapter.setListsItems(XmppHandler.getInstance().getUserList());
+                        adapter.setListsItems(XmppPresenter.getInstance().getUserList());
                     });
                 }
 
                 @Override
                 public void entriesDeleted(Collection<String> addresses) {
                     for (String item : addresses) {
-                        for (int i = 0; i < XmppHandler.getInstance().getUserList().size(); i++) {
-                            User user = XmppHandler.getInstance().getUserList().get(i);
+                        for (int i = 0; i < XmppPresenter.getInstance().getUserList().size(); i++) {
+                            User user = XmppPresenter.getInstance().getUserList().get(i);
                             if (item.contains(user.getName())) {
-                                XmppHandler.getInstance().getUserList().remove(i);
+                                XmppPresenter.getInstance().getUserList().remove(i);
                                 break;
                             }
                         }
                     }
                     NUtil.runOnUi(() -> {
-                        adapter.setListsItems(XmppHandler.getInstance().getUserList());
+                        adapter.setListsItems(XmppPresenter.getInstance().getUserList());
                     });
                 }
 
                 @Override
                 public void presenceChanged(Presence presence) {
                     NUtil.runOnUi(() -> {
-                        for (User user : XmppHandler.getInstance().getUserList()) {
+                        for (User user : XmppPresenter.getInstance().getUserList()) {
                             if (presence.getFrom().contains(user.getName())) {
                                 user.setPresence(presence);
                                 break;
                             }
                         }
-                        adapter.setListsItems(XmppHandler.getInstance().getUserList());
+                        adapter.setListsItems(XmppPresenter.getInstance().getUserList());
                     });
                 }
             });
@@ -194,11 +164,16 @@ public class UsersFragment extends Fragment {
 
             final EditText input = new EditText(getContext());
             input.setInputType(InputType.TYPE_CLASS_TEXT);
+            input.setHint("test1@local.beesightsoft.com");
             builder.setView(input);
 
             // Set up the buttons
             builder.setPositiveButton("OK", (dialog, which) -> {
-                XmppHandler.getInstance().requestUser(input.getText().toString(), Presence.Type.subscribe);
+                try {
+                    XmppPresenter.getInstance().sendInviteRequest(input.getText().toString());
+                } catch (SmackException.NotConnectedException e) {
+                    e.printStackTrace();
+                }
             });
             builder.setNegativeButton("Cancel", (dialog, which) -> {
                 dialog.cancel();

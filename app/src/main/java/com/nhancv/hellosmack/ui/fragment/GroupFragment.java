@@ -8,8 +8,8 @@ import android.view.ViewGroup;
 import android.widget.Button;
 
 import com.nhancv.hellosmack.R;
-import com.nhancv.hellosmack.XmppHandler;
 import com.nhancv.hellosmack.model.User;
+import com.nhancv.hellosmack.xmpp.XmppPresenter;
 
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPException;
@@ -54,14 +54,12 @@ public class GroupFragment extends Fragment {
     @OnClick(R.id.btChatRoom)
     public void btChatRoomOnClick() {
         try {
-            chatRoom = XmppHandler.getInstance().createGroupChat("Room test", XmppHandler.getInstance().getCurrentUser());
+            chatRoom = XmppPresenter.getInstance().createGroupChat("Room test", XmppPresenter.getInstance().getCurrentUser());
             for (User user :
-                    XmppHandler.getInstance().getUserList()) {
+                    XmppPresenter.getInstance().getUserList()) {
                 chatRoom.invite(user.getName(), "hi you");
             }
-        } catch (XMPPException.XMPPErrorException e) {
-            e.printStackTrace();
-        } catch (SmackException e) {
+        } catch (XMPPException.XMPPErrorException | SmackException e) {
             e.printStackTrace();
         }
     }
