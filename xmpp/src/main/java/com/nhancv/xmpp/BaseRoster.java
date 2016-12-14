@@ -1,16 +1,16 @@
-package com.nhancv.hellosmack.model;
+package com.nhancv.xmpp;
 
 import org.jivesoftware.smack.packet.Presence;
 
 /**
  * Created by nhancao on 9/6/16.
  */
-public class User {
+public class BaseRoster {
     private String name;
     private Presence presence;
     private String lastMessage;
 
-    public User(String name, Presence presence) {
+    public BaseRoster(String name, Presence presence) {
         this.name = name;
         this.presence = presence;
     }

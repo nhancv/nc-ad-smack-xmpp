@@ -1,17 +1,23 @@
 package com.nhancv.hellosmack;
 
-import android.app.Application;
+import android.content.Context;
+import android.support.multidex.MultiDex;
+import android.support.multidex.MultiDexApplication;
 
 import com.nhancv.npreferences.NPreferences;
-
-import org.greenrobot.eventbus.EventBus;
 
 /**
  * Created by Nhan Cao on 06-Sep-16.
  */
-public class App extends Application {
-    public static final EventBus bus = new EventBus();
+public class App extends MultiDexApplication {
     public static final String ENCRYPT_KEY = "F/*-7lk(*(&#KD(S(()";
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        MultiDex.install(this);
+        super.attachBaseContext(base);
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();

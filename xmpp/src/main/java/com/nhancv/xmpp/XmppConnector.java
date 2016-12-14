@@ -1,9 +1,7 @@
-package com.nhancv.hellosmack.xmpp;
+package com.nhancv.xmpp;
 
 import android.support.annotation.NonNull;
 import android.util.Log;
-
-import com.google.gson.Gson;
 
 import org.jivesoftware.smack.AbstractXMPPConnection;
 import org.jivesoftware.smack.ConnectionConfiguration;
@@ -73,7 +71,6 @@ public class XmppConnector implements IXmppConnector {
 
     @Override
     public void createConnection() throws IOException, XMPPException, SmackException {
-        Log.i(TAG, "createConnection: " + new Gson().toJson(connection.getConfiguration()));
         connection.connect();
     }
 

@@ -1,6 +1,5 @@
 package com.nhancv.hellosmack.ui.activity;
 
-import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -10,41 +9,42 @@ import android.widget.TextView;
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.helper.NUtil;
 import com.nhancv.hellosmack.ui.adapter.ChatAdapter;
-import com.nhancv.hellosmack.xmpp.XmppPresenter;
+import com.nhancv.xmpp.XmppPresenter;
 
+import org.androidannotations.annotations.AfterViews;
+import org.androidannotations.annotations.Click;
+import org.androidannotations.annotations.EActivity;
+import org.androidannotations.annotations.Extra;
+import org.androidannotations.annotations.ViewById;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.chat.Chat;
 import org.jivesoftware.smack.packet.Message;
 import org.jxmpp.util.XmppStringUtils;
 
-import butterknife.BindView;
-import butterknife.ButterKnife;
-import butterknife.OnClick;
-
 /**
  * Created by nhancao on 9/7/16.
  */
+@EActivity(R.layout.activity_chat)
 public class ChatActivity extends AppCompatActivity {
 
     private static final String TAG = ChatActivity.class.getName();
-    @BindView(R.id.tvTitle)
+    @ViewById(R.id.tvTitle)
     TextView tvTitle;
-    @BindView(R.id.vListsItems)
+    @ViewById(R.id.vListsItems)
     RecyclerView vListsItems;
-    @BindView(R.id.etInput)
+    @ViewById(R.id.etInput)
     EditText etInput;
-    ChatAdapter adapter;
+
+    @Extra
     String address;
+
     Chat chat;
+    ChatAdapter adapter;
     StanzaListener chatSessionListener;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_chat);
-        ButterKnife.bind(this);
-
+    @AfterViews
+    void initView() {
         //Setup View
         vListsItems = (RecyclerView) findViewById(R.id.vListsItems);
         adapter = new ChatAdapter();
@@ -54,13 +54,12 @@ public class ChatActivity extends AppCompatActivity {
         vListsItems.setLayoutManager(llm);
         vListsItems.setAdapter(adapter);
 
-        address = getIntent().getStringExtra("address");
-
         chat = XmppPresenter.getInstance().preparingChat(address);
         chatSessionListener = packet -> {
             if (packet instanceof Message) {
                 Message message = (Message) packet;
                 NUtil.runOnUi(() -> {
+                    message.setTo("<--- " + message.getTo());
                     adapter.addMessage(message);
                     vListsItems.smoothScrollToPosition(adapter.getItemCount());
                 });
@@ -72,12 +71,14 @@ public class ChatActivity extends AppCompatActivity {
         }
     }
 
-    @OnClick(R.id.btSend)
-    public void btSendOnClick() {
+    @Click(R.id.btSend)
+    void btSendOnClick() {
         try {
             Message message = new Message(chat.getParticipant());
             message.setBody(etInput.getText().toString());
             chat.sendMessage(message);
+
+            message.setTo("---> " + message.getTo());
             adapter.addMessage(message);
             vListsItems.smoothScrollToPosition(adapter.getItemCount());
         } catch (SmackException.NotConnectedException e) {
@@ -85,7 +86,7 @@ public class ChatActivity extends AppCompatActivity {
         }
     }
 
-    @OnClick(R.id.btClose)
+    @Click(R.id.btClose)
     public void btCloseOnClick() {
         if (chat != null) {
             chat.close();
@@ -99,13 +100,7 @@ public class ChatActivity extends AppCompatActivity {
 
     @Override
     protected void onStop() {
-        if (chat != null) {
-            chat.close();
-            chat = null;
-        }
-        if (chatSessionListener != null) {
-            XmppPresenter.getInstance().closeChatSession(chatSessionListener);
-        }
+        btCloseOnClick();
         super.onStop();
     }
 }

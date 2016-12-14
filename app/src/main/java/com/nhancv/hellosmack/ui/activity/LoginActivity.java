@@ -8,9 +8,9 @@ import android.widget.EditText;
 
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.helper.NUtil;
-import com.nhancv.hellosmack.xmpp.XmppListener;
-import com.nhancv.hellosmack.xmpp.XmppPresenter;
 import com.nhancv.npreferences.NPreferences;
+import com.nhancv.xmpp.XmppListener;
+import com.nhancv.xmpp.XmppPresenter;
 
 import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.Click;

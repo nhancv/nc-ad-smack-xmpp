@@ -1,10 +1,6 @@
-package com.nhancv.hellosmack.xmpp;
+package com.nhancv.xmpp;
 
 import android.support.annotation.NonNull;
-
-import com.nhancv.hellosmack.listener.ICollections;
-import com.nhancv.hellosmack.listener.XMPPStanzaListener;
-import com.nhancv.hellosmack.model.User;
 
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.StanzaListener;
@@ -13,6 +9,7 @@ import org.jivesoftware.smack.chat.Chat;
 import org.jivesoftware.smack.filter.StanzaFilter;
 import org.jivesoftware.smack.packet.Stanza;
 import org.jivesoftware.smack.roster.Roster;
+import org.jivesoftware.smack.roster.RosterListener;
 
 import java.io.IOException;
 import java.util.List;
@@ -48,11 +45,11 @@ public interface IXmppPresenter {
     //Listener
     void removeAsyncStanzaListener(StanzaListener listener);
 
-    void addAsyncStanzaListener(XMPPStanzaListener packetListener);
+    void addAsyncStanzaListener(StanzaPackageType packetListener);
 
     void addAsyncStanzaListener(StanzaListener packetListener, StanzaFilter packetFilter);
 
-    void addListStanzaListener(List<XMPPStanzaListener> packetListeners);
+    void addListStanzaListener(List<StanzaPackageType> packetListeners);
 
     void setAutoAcceptSubscribe();
 
@@ -64,9 +61,9 @@ public interface IXmppPresenter {
     void closeChatSession(StanzaListener listener);
 
     //User list
-    List<User> getUserList();
+    Roster setupRosterList(RosterListener rosterListener);
 
-    void getUserList(ICollections.ObjectCallBack<Roster> listItemsCallback);
+    List<BaseRoster> getCurrentRosterList();
 
 
 

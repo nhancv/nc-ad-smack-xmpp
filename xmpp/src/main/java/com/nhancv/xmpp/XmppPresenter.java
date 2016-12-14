@@ -1,12 +1,7 @@
-package com.nhancv.hellosmack.xmpp;
+package com.nhancv.xmpp;
 
 import android.support.annotation.NonNull;
 import android.util.Log;
-
-import com.nhancv.hellosmack.helper.NUtil;
-import com.nhancv.hellosmack.listener.ICollections;
-import com.nhancv.hellosmack.listener.XMPPStanzaListener;
-import com.nhancv.hellosmack.model.User;
 
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.StanzaListener;
@@ -25,6 +20,7 @@ import org.jivesoftware.smack.packet.Stanza;
 import org.jivesoftware.smack.packet.XMPPError;
 import org.jivesoftware.smack.roster.Roster;
 import org.jivesoftware.smack.roster.RosterEntry;
+import org.jivesoftware.smack.roster.RosterListener;
 import org.jivesoftware.smack.roster.packet.RosterPacket;
 import org.jivesoftware.smackx.iqregister.AccountManager;
 import org.jivesoftware.smackx.muc.InvitationListener;
@@ -39,8 +35,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import rx.functions.Action1;
-
 /**
  * Created by nhancao on 12/13/16.
  */
@@ -49,7 +43,7 @@ public class XmppPresenter implements IXmppPresenter {
     private static final String TAG = XmppPresenter.class.getSimpleName();
 
     private static XmppPresenter instance = new XmppPresenter();
-    private List<User> userList = new ArrayList<>();
+    private List<BaseRoster> userList = new ArrayList<>();
     private IXmppConnector xmppConnector;
 
     public static XmppPresenter getInstance() {
@@ -151,7 +145,7 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
-    public void addAsyncStanzaListener(XMPPStanzaListener packetListener) {
+    public void addAsyncStanzaListener(StanzaPackageType packetListener) {
         addAsyncStanzaListener(packetListener.getStanzaListener(),
                 new StanzaTypeFilter(packetListener.getPacketType()));
     }
@@ -162,15 +156,15 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
-    public void addListStanzaListener(List<XMPPStanzaListener> packetListeners) {
-        for (XMPPStanzaListener listener : packetListeners) {
+    public void addListStanzaListener(List<StanzaPackageType> packetListeners) {
+        for (StanzaPackageType listener : packetListeners) {
             addAsyncStanzaListener(listener.getStanzaListener(), new StanzaTypeFilter(listener.getPacketType()));
         }
     }
 
     @Override
     public void setAutoAcceptSubscribe() {
-        XMPPStanzaListener autoAcceptSubscribe = new XMPPStanzaListener(packet -> {
+        StanzaPackageType autoAcceptSubscribe = new StanzaPackageType(packet -> {
             if (packet instanceof Presence) {
                 Log.e(TAG, "Presence: " + packet);
                 Presence presence = (Presence) packet;
@@ -213,29 +207,72 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
-    public List<User> getUserList() {
+    public List<BaseRoster> getCurrentRosterList() {
         return userList;
     }
 
     @Override
-    public void getUserList(ICollections.ObjectCallBack<Roster> listItemsCallback) {
-        NUtil.aSyncTask(subscriber -> {
-            userList = new ArrayList<>();
-            Roster roster = Roster.getInstanceFor(xmppConnector.getConnection());
-            Collection<RosterEntry> entries = roster.getEntries();
-            Presence presence;
+    public Roster setupRosterList(RosterListener rosterListener) {
+        userList = new ArrayList<>();
+        Roster roster = Roster.getInstanceFor(xmppConnector.getConnection());
+        Collection<RosterEntry> entries = roster.getEntries();
+        Presence presence;
 
-            for (RosterEntry entry : entries) {
-                presence = roster.getPresence(entry.getUser());
-                userList.add(new User(entry.getUser(), presence));
-            }
-            subscriber.onNext(roster);
-        }, new Action1<Roster>() {
+        for (RosterEntry entry : entries) {
+            presence = roster.getPresence(entry.getUser());
+            userList.add(new BaseRoster(entry.getUser(), presence));
+        }
+        roster.setSubscriptionMode(Roster.SubscriptionMode.manual);
+        roster.addRosterListener(new RosterListener() {
             @Override
-            public void call(Roster roster) {
-                listItemsCallback.callback(roster);
+            public void entriesAdded(Collection<String> addresses) {
+                for (String item : addresses) {
+                    Presence presence = roster.getPresence(item);
+                    XmppPresenter.getInstance().getCurrentRosterList().add(new BaseRoster(item, presence));
+                }
+                rosterListener.entriesAdded(addresses);
+            }
+
+            @Override
+            public void entriesUpdated(Collection<String> addresses) {
+                for (String item : addresses) {
+                    for (BaseRoster user : XmppPresenter.getInstance().getCurrentRosterList()) {
+                        if (item.contains(user.getName())) {
+                            Presence presence = roster.getPresence(item);
+                            user.setPresence(presence);
+                            break;
+                        }
+                    }
+                }
+                rosterListener.entriesUpdated(addresses);
+            }
+
+            @Override
+            public void entriesDeleted(Collection<String> addresses) {
+                for (String item : addresses) {
+                    for (int i = 0; i < XmppPresenter.getInstance().getCurrentRosterList().size(); i++) {
+                        BaseRoster user = XmppPresenter.getInstance().getCurrentRosterList().get(i);
+                        if (item.contains(user.getName())) {
+                            XmppPresenter.getInstance().getCurrentRosterList().remove(i);
+                            break;
+                        }
+                    }
+                }
+                rosterListener.entriesDeleted(addresses);
+            }
+
+            @Override
+            public void presenceChanged(Presence presence) {
+                for (BaseRoster user : XmppPresenter.getInstance().getCurrentRosterList()) {
+                    if (presence.getFrom().contains(user.getName())) {
+                        user.setPresence(presence);
+                        break;
+                    }
+                }
+                rosterListener.presenceChanged(presence);
             }
         });
+        return roster;
     }
 
     @Override
@@ -243,6 +280,8 @@ public class XmppPresenter implements IXmppPresenter {
         return xmppConnector.getConnection().getUser();
     }
 
+
+    //Other implement
     public void searchUser(String user) {
         try {
             Log.e(TAG, "searchUser: ");
@@ -264,14 +303,12 @@ public class XmppPresenter implements IXmppPresenter {
         }
     }
 
-    public void setupIncomingChat(ICollections.ObjectCallBack<Chat> chatObjectCallBack) {
+    public void setupIncomingChat(XmppListener.IXmppCallback<Chat> chatObjectCallBack) {
         if (xmppConnector.getConnection().isConnected()) {
             ChatManager chatManager = ChatManager.getInstanceFor(xmppConnector.getConnection());
             chatManager.addChatListener((chat, createdLocally) -> {
                 if (!createdLocally) {
-                    NUtil.runOnUi(() -> {
-                        chatObjectCallBack.callback(chat);
-                    });
+                    chatObjectCallBack.callback(chat);
                 }
             });
         }

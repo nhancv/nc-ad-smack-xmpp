@@ -1,6 +1,5 @@
 package com.nhancv.hellosmack.ui.adapter;
 
-import android.content.Intent;
 import android.graphics.drawable.GradientDrawable;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
@@ -12,9 +11,9 @@ import android.widget.TextView;
 
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.helper.NUtil;
-import com.nhancv.hellosmack.model.User;
-import com.nhancv.hellosmack.ui.activity.ChatActivity;
-import com.nhancv.hellosmack.xmpp.XmppPresenter;
+import com.nhancv.hellosmack.ui.activity.ChatActivity_;
+import com.nhancv.xmpp.BaseRoster;
+import com.nhancv.xmpp.XmppPresenter;
 
 import org.jivesoftware.smack.SmackException;
 
@@ -29,7 +28,7 @@ import butterknife.ButterKnife;
  */
 public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.ListsHolder> {
     private static final String TAG = UsersAdapter.class.getName();
-    private List<User> listsItems;
+    private List<BaseRoster> listsItems;
 
     public UsersAdapter() {
         this.listsItems = new ArrayList<>();
@@ -40,7 +39,7 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.ListsHolder>
      *
      * @param listsItems
      */
-    public void setListsItems(List<User> listsItems) {
+    public void setListsItems(List<BaseRoster> listsItems) {
         this.listsItems = listsItems;
         notifyDataSetChanged();
     }
@@ -54,34 +53,29 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.ListsHolder>
 
     @Override
     public void onBindViewHolder(UsersAdapter.ListsHolder holder, int position) {
-        User user = listsItems.get(position);
+        BaseRoster user = listsItems.get(position);
         holder.tvName.setText(user.getName());
         holder.tvLastMsg.setText(user.getLastMessage());
         holder.vItem.setOnClickListener(v -> {
-            Intent intent = new Intent(v.getContext(), ChatActivity.class);
-            intent.putExtra("address", user.getPresence().getFrom());
-            v.getContext().startActivity(intent);
+            ChatActivity_.intent(holder.itemView.getContext()).address(user.getPresence().getFrom()).start();
         });
-        holder.vItem.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
-                builder.setTitle("Remove contact");
-                builder.setMessage("Are you sure to remove this contact?");
-                // Set up the buttons
-                builder.setPositiveButton("OK", (dialog, which) -> {
-                    try {
-                        XmppPresenter.getInstance().sendUnFriendRequest(user.getName());
-                    } catch (SmackException.NotConnectedException e) {
-                        e.printStackTrace();
-                    }
-                });
-                builder.setNegativeButton("Cancel", (dialog, which) -> {
-                    dialog.cancel();
-                });
-                builder.show();
-                return true;
-            }
+        holder.vItem.setOnLongClickListener(v -> {
+            AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
+            builder.setTitle("Remove contact");
+            builder.setMessage("Are you sure to remove this contact?");
+            // Set up the buttons
+            builder.setPositiveButton("OK", (dialog, which) -> {
+                try {
+                    XmppPresenter.getInstance().sendUnFriendRequest(user.getName());
+                } catch (SmackException.NotConnectedException e) {
+                    e.printStackTrace();
+                }
+            });
+            builder.setNegativeButton("Cancel", (dialog, which) -> {
+                dialog.cancel();
+            });
+            builder.show();
+            return true;
         });
         int color = ContextCompat.getColor(holder.vItem.getContext(), R.color.offline_status);
         if (user.getPresence().isAvailable()) {

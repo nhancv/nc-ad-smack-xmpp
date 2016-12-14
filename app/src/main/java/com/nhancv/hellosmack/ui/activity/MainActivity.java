@@ -1,7 +1,5 @@
 package com.nhancv.hellosmack.ui.activity;
 
-import android.content.Intent;
-import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
@@ -12,19 +10,17 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.helper.NUtil;
-import com.nhancv.hellosmack.ui.fragment.GroupFragment;
-import com.nhancv.hellosmack.ui.fragment.UsersFragment;
-import com.nhancv.hellosmack.xmpp.XmppPresenter;
+import com.nhancv.hellosmack.ui.fragment.GroupFragment_;
+import com.nhancv.hellosmack.ui.fragment.UsersFragment_;
 import com.nhancv.npreferences.NPreferences;
+import com.nhancv.xmpp.XmppPresenter;
 
 import org.androidannotations.annotations.AfterViews;
-import org.androidannotations.annotations.Click;
 import org.androidannotations.annotations.EActivity;
 import org.androidannotations.annotations.ViewById;
 import org.jivesoftware.smack.SmackException;
@@ -46,10 +42,8 @@ public class MainActivity extends AppCompatActivity {
     DrawerLayout vDrawer;
     @ViewById(R.id.vNavigation)
     NavigationView vNavigation;
-    @ViewById(R.id.btFab)
-    FloatingActionButton btFab;
+
     ViewPagerAdapter adapter;
-    int pageSelected = 0;
 
     @AfterViews
     void initView() {
@@ -75,8 +69,7 @@ public class MainActivity extends AppCompatActivity {
                             e.printStackTrace();
                         }
                         //Transmit to login screen
-                        Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-                        startActivity(intent);
+                        LoginActivity_.intent(MainActivity.this).start();
                         finish();
                     });
                     break;
@@ -104,42 +97,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupViewPager(ViewPager viewPager) {
         adapter = new ViewPagerAdapter(getSupportFragmentManager());
-        adapter.addFragment(new UsersFragment(), "Users");
-        adapter.addFragment(new GroupFragment(), "Group");
+        adapter.addFragment(new UsersFragment_(), "Users");
+        adapter.addFragment(new GroupFragment_(), "Group");
         viewPager.setAdapter(adapter);
-        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-            @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-
-            }
-
-            @Override
-            public void onPageSelected(int position) {
-                pageSelected = position;
-                switch (position) {
-                    case 0:
-                        btFab.show();
-                        break;
-
-                    default:
-                        btFab.hide();
-                        break;
-                }
-            }
-
-            @Override
-            public void onPageScrollStateChanged(int state) {
-
-            }
-        });
-    }
-
-    @Click(R.id.btFab)
-    void btFagOnClick() {
-        Fragment fragment = adapter.getItem(pageSelected);
-        if (fragment instanceof UsersFragment) {
-            ((UsersFragment) fragment).btAddContactOnClick();
-        }
     }
 
     class ViewPagerAdapter extends FragmentPagerAdapter {

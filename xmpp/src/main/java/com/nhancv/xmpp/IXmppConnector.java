@@ -1,4 +1,4 @@
-package com.nhancv.hellosmack.xmpp;
+package com.nhancv.xmpp;
 
 import android.support.annotation.NonNull;
 

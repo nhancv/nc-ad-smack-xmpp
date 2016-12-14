@@ -1,4 +1,4 @@
-package com.nhancv.hellosmack.xmpp;
+package com.nhancv.xmpp;
 
 import org.jivesoftware.smack.SmackException;
 
@@ -26,4 +26,10 @@ public class XmppListener {
 
         void createError(Exception ex);
     }
+
+    public interface IXmppCallback<T> {
+        void callback(T item);
+    }
+
+
 }
