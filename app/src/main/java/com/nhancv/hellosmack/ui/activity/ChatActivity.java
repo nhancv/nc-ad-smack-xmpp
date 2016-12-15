@@ -120,13 +120,14 @@ public class ChatActivity extends AppCompatActivity {
     @Click(R.id.btSend)
     void btSendOnClick() {
         try {
+            if (etInput.getText().length() > 0) {
+                Message message = new Message(chat.getParticipant());
+                message.setBody(etInput.getText().toString());
+                chat.sendMessage(message);
 
-            Message message = new Message(chat.getParticipant());
-            message.setBody(etInput.getText().toString());
-            chat.sendMessage(message);
-
-            adapter.addMessage(message);
-            vListsItems.smoothScrollToPosition(adapter.getItemCount());
+                adapter.addMessage(message);
+                vListsItems.smoothScrollToPosition(adapter.getItemCount());
+            }
         } catch (SmackException.NotConnectedException e) {
             e.printStackTrace();
         }
