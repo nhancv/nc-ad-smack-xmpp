@@ -5,7 +5,6 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.InputType;
-import android.util.Log;
 import android.widget.EditText;
 
 import com.nhancv.hellosmack.R;
@@ -52,18 +51,12 @@ public class UsersFragment extends Fragment {
         XmppPresenter.getInstance().setAutoAcceptSubscribe();
         XmppPresenter.getInstance().addAsyncStanzaListener(new StanzaPackageType(packet -> {
             if (packet instanceof Message) {
-                Log.e(TAG, "Message: " + packet);
+//                Log.e(TAG, "Message: " + packet);
                 Message message = (Message) packet;
                 for (BaseRoster user : XmppPresenter.getInstance().getCurrentRosterList()) {
-                    if (message.getFrom() == null) {
-                        NUtil.runOnUi(() -> {
-                            NUtil.showToast(getContext(), "User offline");
-                        });
-                    } else {
-                        if (message.getFrom().contains(user.getName())) {
-                            user.setLastMessage(message.getBody());
-                            break;
-                        }
+                    if (message.getFrom() != null && message.getFrom().contains(user.getName())) {
+                        user.setLastMessage(message.getBody());
+                        break;
                     }
                 }
                 updateAdapterList();

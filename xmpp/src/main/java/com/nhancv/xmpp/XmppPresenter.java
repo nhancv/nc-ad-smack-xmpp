@@ -166,7 +166,6 @@ public class XmppPresenter implements IXmppPresenter {
     public void setAutoAcceptSubscribe() {
         StanzaPackageType autoAcceptSubscribe = new StanzaPackageType(packet -> {
             if (packet instanceof Presence) {
-                Log.e(TAG, "Presence: " + packet);
                 Presence presence = (Presence) packet;
                 if (presence.getType() != null) {
                     switch (presence.getType()) {

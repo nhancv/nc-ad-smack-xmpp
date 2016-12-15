@@ -3,13 +3,17 @@ package com.nhancv.hellosmack.ui.activity;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.Editable;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 
 import com.nhancv.hellosmack.R;
+import com.nhancv.hellosmack.helper.NTextChange;
 import com.nhancv.hellosmack.helper.NUtil;
 import com.nhancv.hellosmack.ui.adapter.ChatAdapter;
 import com.nhancv.xmpp.XmppPresenter;
+import com.nhancv.xmpp.XmppUtil;
 
 import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.Click;
@@ -20,6 +24,8 @@ import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.chat.Chat;
 import org.jivesoftware.smack.packet.Message;
+import org.jivesoftware.smackx.chatstates.ChatState;
+import org.jivesoftware.smackx.chatstates.ChatStateManager;
 import org.jxmpp.util.XmppStringUtils;
 
 /**
@@ -35,13 +41,35 @@ public class ChatActivity extends AppCompatActivity {
     RecyclerView vListsItems;
     @ViewById(R.id.etInput)
     EditText etInput;
+    @ViewById(R.id.tvTyping)
+    TextView tvTyping;
 
     @Extra
     String address;
 
-    Chat chat;
-    ChatAdapter adapter;
-    StanzaListener chatSessionListener;
+    private Chat chat;
+    private ChatAdapter adapter;
+    private StanzaListener chatSessionListener;
+    private ChatStateManager chatStateManager;
+    private NTextChange editTextAutoChange = new NTextChange(new NTextChange.TextListener() {
+        @Override
+        public void after(Editable editable) {
+            try {
+                chatStateManager.setCurrentState(ChatState.inactive, chat);
+            } catch (SmackException.NotConnectedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        public void before() {
+            try {
+                chatStateManager.setCurrentState(ChatState.composing, chat);
+            } catch (SmackException.NotConnectedException e) {
+                e.printStackTrace();
+            }
+        }
+    });
 
     @AfterViews
     void initView() {
@@ -54,31 +82,49 @@ public class ChatActivity extends AppCompatActivity {
         vListsItems.setLayoutManager(llm);
         vListsItems.setAdapter(adapter);
 
-        chat = XmppPresenter.getInstance().preparingChat(address);
+        chatStateManager = ChatStateManager.getInstance(XmppPresenter.getInstance().getXmppConnector().getConnection());
+
         chatSessionListener = packet -> {
             if (packet instanceof Message) {
                 Message message = (Message) packet;
-                NUtil.runOnUi(() -> {
-                    message.setTo("<--- " + message.getTo());
-                    adapter.addMessage(message);
-                    vListsItems.smoothScrollToPosition(adapter.getItemCount());
-                });
+                String xml = message.toXML().toString();
+                if (XmppUtil.isMessage(xml)) {
+                    NUtil.runOnUi(() -> {
+                        adapter.addMessage(message);
+                        vListsItems.smoothScrollToPosition(adapter.getItemCount());
+                    });
+                } else {
+                    ChatState chatState = XmppUtil.getChatState(xml);
+                    NUtil.runOnUi(() -> {
+                        if (chatState != null && chatState == ChatState.composing) {
+                            updateTyping(message.getFrom() + " is typing ...");
+                        } else {
+                            updateTyping(null);
+                        }
+                    });
+                }
             }
         };
+
+        chat = XmppPresenter.getInstance().preparingChat(address);
         XmppPresenter.getInstance().openChatSession(chatSessionListener, address);
+
         if (chat != null) {
             tvTitle.setText(XmppStringUtils.parseBareJid(address));
         }
+
+        etInput.addTextChangedListener(editTextAutoChange);
+
     }
 
     @Click(R.id.btSend)
     void btSendOnClick() {
         try {
+
             Message message = new Message(chat.getParticipant());
             message.setBody(etInput.getText().toString());
             chat.sendMessage(message);
 
-            message.setTo("---> " + message.getTo());
             adapter.addMessage(message);
             vListsItems.smoothScrollToPosition(adapter.getItemCount());
         } catch (SmackException.NotConnectedException e) {
@@ -102,5 +148,14 @@ public class ChatActivity extends AppCompatActivity {
     protected void onStop() {
         btCloseOnClick();
         super.onStop();
+    }
+
+    public void updateTyping(String msg) {
+        if (msg == null) {
+            tvTyping.setVisibility(View.GONE);
+        } else {
+            tvTyping.setVisibility(View.VISIBLE);
+            tvTyping.setText(msg);
+        }
     }
 }
