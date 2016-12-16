@@ -287,9 +287,9 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
-    public void updatePresence(Presence.Type presenceType, String status)
+    public void updatePresence(Presence.Mode presenceMode, String status)
             throws SmackException.NotConnectedException {
-        Presence p = new Presence(presenceType, status, 42, Presence.Mode.dnd);
+        Presence p = new Presence(Presence.Type.available, status, 42, presenceMode);
         sendStanza(p);
     }
 

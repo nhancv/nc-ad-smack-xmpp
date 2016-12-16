@@ -33,7 +33,7 @@ public interface IXmppPresenter {
     String getCurrentUser();
 
     //Invite/request
-    void updatePresence(Presence.Type presenceType, String status) throws SmackException.NotConnectedException;
+    void updatePresence(Presence.Mode presenceMode, String status) throws SmackException.NotConnectedException;
 
     void sendStanza(@NonNull Stanza packet) throws SmackException.NotConnectedException;
 
