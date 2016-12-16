@@ -286,6 +286,13 @@ public class XmppPresenter implements IXmppPresenter {
         return xmppConnector.getConnection().getUser();
     }
 
+    @Override
+    public void updatePresence(Presence.Type presenceType, String status)
+            throws SmackException.NotConnectedException {
+        Presence p = new Presence(presenceType, status, 42, Presence.Mode.dnd);
+        sendStanza(p);
+    }
+
 
     //Other implement
     public void searchUser(String user) {

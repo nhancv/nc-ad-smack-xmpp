@@ -7,6 +7,7 @@ import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.chat.Chat;
 import org.jivesoftware.smack.filter.StanzaFilter;
+import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.packet.Stanza;
 import org.jivesoftware.smack.roster.Roster;
 import org.jivesoftware.smack.roster.RosterListener;
@@ -32,6 +33,8 @@ public interface IXmppPresenter {
     String getCurrentUser();
 
     //Invite/request
+    void updatePresence(Presence.Type presenceType, String status) throws SmackException.NotConnectedException;
+
     void sendStanza(@NonNull Stanza packet) throws SmackException.NotConnectedException;
 
     void sendInviteRequest(String userJid) throws SmackException.NotConnectedException;
