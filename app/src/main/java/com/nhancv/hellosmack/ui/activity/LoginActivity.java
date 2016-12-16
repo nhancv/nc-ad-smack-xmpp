@@ -63,7 +63,6 @@ public class LoginActivity extends AppCompatActivity {
                 XmppPresenter.getInstance().login(userName, passWord, new XmppListener.IXmppLoginListener() {
                     @Override
                     public void loginSuccess() {
-                        Log.e(TAG, "loginSuccess: ");
                         if (checkBox.isChecked()) {
                             NPreferences.getInstance()
                                     .edit()

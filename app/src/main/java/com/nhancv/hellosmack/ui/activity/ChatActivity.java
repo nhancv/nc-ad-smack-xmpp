@@ -12,6 +12,7 @@ import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.helper.NTextChange;
 import com.nhancv.hellosmack.helper.NUtil;
 import com.nhancv.hellosmack.ui.adapter.ChatAdapter;
+import com.nhancv.xmpp.BaseRoster;
 import com.nhancv.xmpp.XmppPresenter;
 import com.nhancv.xmpp.XmppUtil;
 
@@ -87,21 +88,28 @@ public class ChatActivity extends AppCompatActivity {
         chatSessionListener = packet -> {
             if (packet instanceof Message) {
                 Message message = (Message) packet;
-                String xml = message.toXML().toString();
-                if (XmppUtil.isMessage(xml)) {
-                    NUtil.runOnUi(() -> {
-                        adapter.addMessage(message);
-                        vListsItems.smoothScrollToPosition(adapter.getItemCount());
-                    });
-                } else {
-                    ChatState chatState = XmppUtil.getChatState(xml);
-                    NUtil.runOnUi(() -> {
-                        if (chatState != null && chatState == ChatState.composing) {
-                            updateTyping(message.getFrom() + " is typing ...");
-                        } else {
-                            updateTyping(null);
-                        }
-                    });
+                BaseRoster roster = XmppPresenter
+                        .getInstance()
+                        .getRoster(XmppStringUtils.parseBareJid(message.getFrom()));
+                if (roster != null && roster
+                        .getPresence()
+                        .isAvailable()) {
+                    String xml = message.toXML().toString();
+                    if (XmppUtil.isMessage(xml)) {
+                        NUtil.runOnUi(() -> {
+                            adapter.addMessage(message);
+                            vListsItems.smoothScrollToPosition(adapter.getItemCount());
+                        });
+                    } else {
+                        ChatState chatState = XmppUtil.getChatState(xml);
+                        NUtil.runOnUi(() -> {
+                            if (chatState != null && chatState == ChatState.composing) {
+                                updateTyping(message.getFrom() + " is typing ...");
+                            } else {
+                                updateTyping(null);
+                            }
+                        });
+                    }
                 }
             }
         };

@@ -65,6 +65,8 @@ public interface IXmppPresenter {
 
     List<BaseRoster> getCurrentRosterList();
 
+    BaseRoster getRoster(String rosterJid);
+
 
 
 }

@@ -78,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
         });
         View header = vNavigation.getHeaderView(0);
         TextView tvEmail = (TextView) header.findViewById(R.id.tvEmail);
-        tvEmail.setText(XmppPresenter.getInstance().getXmppConnector().getConnection().getUser());
+        tvEmail.setText(XmppPresenter.getInstance().getCurrentUser());
 
         ActionBarDrawerToggle actionBarDrawerToggle = new ActionBarDrawerToggle(this, vDrawer, vToolbar, R.string.drawer_open, R.string.drawer_close) {
             @Override

@@ -33,7 +33,9 @@ import org.jivesoftware.smackx.xdata.Form;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by nhancao on 12/13/16.
@@ -43,7 +45,7 @@ public class XmppPresenter implements IXmppPresenter {
     private static final String TAG = XmppPresenter.class.getSimpleName();
 
     private static XmppPresenter instance = new XmppPresenter();
-    private List<BaseRoster> userList = new ArrayList<>();
+    private Map<String, BaseRoster> userListMap = new LinkedHashMap<>();
     private IXmppConnector xmppConnector;
 
     public static XmppPresenter getInstance() {
@@ -62,6 +64,8 @@ public class XmppPresenter implements IXmppPresenter {
         xmppConnector = new XmppConnector();
         xmppConnector.setupLoginConnection(xmppCredential, loginConnectionListener);
         xmppConnector.createConnection();
+
+
     }
 
     @Override
@@ -207,19 +211,23 @@ public class XmppPresenter implements IXmppPresenter {
 
     @Override
     public List<BaseRoster> getCurrentRosterList() {
-        return userList;
+        return new ArrayList<>(userListMap.values());
+    }
+
+    @Override
+    public BaseRoster getRoster(String rosterJid) {
+        return userListMap.get(rosterJid);
     }
 
     @Override
     public Roster setupRosterList(RosterListener rosterListener) {
-        userList = new ArrayList<>();
         Roster roster = Roster.getInstanceFor(xmppConnector.getConnection());
         Collection<RosterEntry> entries = roster.getEntries();
         Presence presence;
 
         for (RosterEntry entry : entries) {
             presence = roster.getPresence(entry.getUser());
-            userList.add(new BaseRoster(entry.getUser(), presence));
+            userListMap.put(entry.getUser(), new BaseRoster(entry.getUser(), presence));
         }
         roster.setSubscriptionMode(Roster.SubscriptionMode.manual);
         roster.addRosterListener(new RosterListener() {
@@ -227,7 +235,7 @@ public class XmppPresenter implements IXmppPresenter {
             public void entriesAdded(Collection<String> addresses) {
                 for (String item : addresses) {
                     Presence presence = roster.getPresence(item);
-                    XmppPresenter.getInstance().getCurrentRosterList().add(new BaseRoster(item, presence));
+                    userListMap.put(item, new BaseRoster(item, presence));
                 }
                 rosterListener.entriesAdded(addresses);
             }
@@ -235,10 +243,10 @@ public class XmppPresenter implements IXmppPresenter {
             @Override
             public void entriesUpdated(Collection<String> addresses) {
                 for (String item : addresses) {
-                    for (BaseRoster user : XmppPresenter.getInstance().getCurrentRosterList()) {
-                        if (item.contains(user.getName())) {
+                    for (BaseRoster baseRoster : userListMap.values()) {
+                        if (item.contains(baseRoster.getName())) {
                             Presence presence = roster.getPresence(item);
-                            user.setPresence(presence);
+                            baseRoster.setPresence(presence);
                             break;
                         }
                     }
@@ -249,10 +257,9 @@ public class XmppPresenter implements IXmppPresenter {
             @Override
             public void entriesDeleted(Collection<String> addresses) {
                 for (String item : addresses) {
-                    for (int i = 0; i < XmppPresenter.getInstance().getCurrentRosterList().size(); i++) {
-                        BaseRoster user = XmppPresenter.getInstance().getCurrentRosterList().get(i);
-                        if (item.contains(user.getName())) {
-                            XmppPresenter.getInstance().getCurrentRosterList().remove(i);
+                    for (BaseRoster baseRoster : userListMap.values()) {
+                        if (item.contains(baseRoster.getName())) {
+                            userListMap.values().remove(baseRoster);
                             break;
                         }
                     }
@@ -262,9 +269,9 @@ public class XmppPresenter implements IXmppPresenter {
 
             @Override
             public void presenceChanged(Presence presence) {
-                for (BaseRoster user : XmppPresenter.getInstance().getCurrentRosterList()) {
-                    if (presence.getFrom().contains(user.getName())) {
-                        user.setPresence(presence);
+                for (BaseRoster baseRoster : userListMap.values()) {
+                    if (presence.getFrom().contains(baseRoster.getName())) {
+                        baseRoster.setPresence(presence);
                         break;
                     }
                 }
