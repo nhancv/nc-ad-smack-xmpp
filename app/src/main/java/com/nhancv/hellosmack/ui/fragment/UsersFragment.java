@@ -5,13 +5,12 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.InputType;
+import android.util.Log;
 import android.widget.EditText;
 
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.helper.NUtil;
 import com.nhancv.hellosmack.ui.adapter.UsersAdapter;
-import com.nhancv.xmpp.BaseRoster;
-import com.nhancv.xmpp.StanzaPackageType;
 import com.nhancv.xmpp.XmppPresenter;
 
 import org.androidannotations.annotations.AfterViews;
@@ -19,11 +18,9 @@ import org.androidannotations.annotations.Click;
 import org.androidannotations.annotations.EFragment;
 import org.androidannotations.annotations.ViewById;
 import org.jivesoftware.smack.SmackException;
-import org.jivesoftware.smack.packet.Message;
+import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.packet.Presence;
-import org.jivesoftware.smack.roster.RosterListener;
-
-import java.util.Collection;
+import org.jivesoftware.smackx.offline.OfflineMessageManager;
 
 /**
  * Created by Nhan Cao on 06-Sep-16.
@@ -49,42 +46,23 @@ public class UsersFragment extends Fragment {
         vListsItems.setAdapter(adapter);
 
         XmppPresenter.getInstance().setAutoAcceptSubscribe();
-        XmppPresenter.getInstance().addAsyncStanzaListener(new StanzaPackageType(packet -> {
-            if (packet instanceof Message) {
-//                Log.e(TAG, "Message: " + packet);
-                Message message = (Message) packet;
-                for (BaseRoster user : XmppPresenter.getInstance().getCurrentRosterList()) {
-                    if (message.getFrom() != null && message.getFrom().contains(user.getName())) {
-                        user.setLastMessage(message.getBody());
-                        break;
-                    }
-                }
-                updateAdapterList();
-            }
-        }, Message.class));
+        XmppPresenter.getInstance().addMessageStanzaListener(message -> UsersFragment.this.updateAdapterList());
+        OfflineMessageManager offlineMessageManager = new OfflineMessageManager(XmppPresenter.getInstance().getXmppConnector().getConnection());
+        try {
+            Log.e(TAG, "initView: offline message count " + offlineMessageManager.getMessageCount());
+            offlineMessageManager.getMessages();
+            offlineMessageManager.deleteMessages();
+        } catch (SmackException.NoResponseException | XMPPException.XMPPErrorException | SmackException.NotConnectedException e) {
+            e.printStackTrace();
+        }
 
         NUtil.aSyncTask(subscriber -> {
-            XmppPresenter.getInstance().setupRosterList(new RosterListener() {
-                @Override
-                public void entriesAdded(Collection<String> addresses) {
-                    updateAdapterList();
-                }
-
-                @Override
-                public void entriesUpdated(Collection<String> addresses) {
-                    updateAdapterList();
-                }
-
-                @Override
-                public void entriesDeleted(Collection<String> addresses) {
-                    updateAdapterList();
-                }
-
-                @Override
-                public void presenceChanged(Presence presence) {
-                    updateAdapterList();
-                }
-            });
+            try {
+                XmppPresenter.getInstance().setupRosterList(this::updateAdapterList);
+                XmppPresenter.getInstance().updatePresence(Presence.Mode.available, "Im here");
+            } catch (SmackException.NotConnectedException e) {
+                e.printStackTrace();
+            }
             updateAdapterList();
         });
     }

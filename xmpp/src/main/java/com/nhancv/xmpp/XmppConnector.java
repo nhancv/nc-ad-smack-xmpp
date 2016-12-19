@@ -74,7 +74,7 @@ public class XmppConnector implements IXmppConnector {
         configBuilder.setPort(xmppConfig.getPort());
         configBuilder.setDebuggerEnabled(false);
 //        For offline message
-//        configBuilder.setSendPresence(false);
+        configBuilder.setSendPresence(false);
 
         connection = new XMPPTCPConnection(configBuilder.build());
         connection.setPacketReplyTimeout(5000);

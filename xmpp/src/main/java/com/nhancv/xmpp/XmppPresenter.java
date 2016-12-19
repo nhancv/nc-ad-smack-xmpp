@@ -47,6 +47,7 @@ public class XmppPresenter implements IXmppPresenter {
     private static XmppPresenter instance = new XmppPresenter();
     private Map<String, BaseRoster> userListMap = new LinkedHashMap<>();
     private IXmppConnector xmppConnector;
+    private RosterListener baseRosterListener;
 
     public static XmppPresenter getInstance() {
         return instance;
@@ -153,9 +154,33 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
+    public void removeAsyncStanzaListener(StanzaPackageType packetListener) {
+        removeAsyncStanzaListener(packetListener.getStanzaListener());
+    }
+
+    @Override
     public void addAsyncStanzaListener(StanzaPackageType packetListener) {
         addAsyncStanzaListener(packetListener.getStanzaListener(),
                 new StanzaTypeFilter(packetListener.getPacketType()));
+    }
+
+    @Override
+    public void addMessageStanzaListener(XmppListener.IXmppCallback<Stanza> messageStanzaListener) {
+        StanzaPackageType messagePackageType = new StanzaPackageType(packet -> {
+            if (packet instanceof Message) {
+                Message message = (Message) packet;
+                Log.e(TAG, "addMessageStanzaListener: " + message.getFrom() + " " + message.getBody());
+                for (BaseRoster user : XmppPresenter.getInstance().getCurrentRosterList()) {
+                    if (message.getFrom() != null && message.getFrom().contains(user.getName())) {
+                        user.setLastMessage(message.getBody());
+                        break;
+                    }
+                }
+                messageStanzaListener.callback(packet);
+            }
+        }, Message.class);
+
+        addAsyncStanzaListener(messagePackageType);
     }
 
     @Override
@@ -178,34 +203,33 @@ public class XmppPresenter implements IXmppPresenter {
                 if (presence.getType() != null) {
                     switch (presence.getType()) {
                         case subscribe:
-                            XmppPresenter.getInstance().acceptInviteRequest(presence.getFrom());
+                            acceptInviteRequest(presence.getFrom());
                             break;
                         case unsubscribe:
-                            XmppPresenter.getInstance().acceptUnFriendRequest(presence.getFrom());
+                            acceptUnFriendRequest(presence.getFrom());
                             break;
 
                     }
                 }
             }
         }, Stanza.class);
+
         addAsyncStanzaListener(autoAcceptSubscribe.getStanzaListener(),
                 new StanzaTypeFilter(autoAcceptSubscribe.getPacketType()));
     }
 
     @Override
-    public Chat preparingChat(String toJid) {
+    public Chat openChatSession(StanzaListener listener, String toJid) {
+        addAsyncStanzaListener(listener,
+                new AndFilter(new StanzaTypeFilter(Message.class),
+                        new FromMatchesFilter(toJid, false)));
+
         if (xmppConnector.getConnection().isConnected()) {
             return ChatManager.getInstanceFor(xmppConnector.getConnection()).createChat(toJid);
         } else {
             return null;
         }
-    }
 
-    @Override
-    public void openChatSession(StanzaListener listener, String toJid) {
-        addAsyncStanzaListener(listener,
-                new AndFilter(new StanzaTypeFilter(Message.class),
-                        new FromMatchesFilter(toJid, false)));
     }
 
     @Override
@@ -224,7 +248,17 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
-    public Roster setupRosterList(RosterListener rosterListener) {
+    public Roster setupRosterList(@NonNull RosterListener rosterListener) {
+        return setupRosterList(rosterListener, null);
+    }
+
+    @Override
+    public Roster setupRosterList(@NonNull XmppListener.IXmppUpdateCallback updateListener) {
+        return setupRosterList(null, updateListener);
+    }
+
+    @Override
+    public Roster setupRosterList(RosterListener rosterListener, XmppListener.IXmppUpdateCallback updateListener) {
         Roster roster = Roster.getInstanceFor(xmppConnector.getConnection());
         Collection<RosterEntry> entries = roster.getEntries();
         Presence presence;
@@ -234,54 +268,68 @@ public class XmppPresenter implements IXmppPresenter {
             userListMap.put(entry.getUser(), new BaseRoster(entry.getUser(), presence));
         }
         roster.setSubscriptionMode(Roster.SubscriptionMode.manual);
-        roster.addRosterListener(new RosterListener() {
-            @Override
-            public void entriesAdded(Collection<String> addresses) {
-                for (String item : addresses) {
-                    Presence presence = roster.getPresence(item);
-                    userListMap.put(item, new BaseRoster(item, presence));
+        if (baseRosterListener == null) {
+            baseRosterListener = new RosterListener() {
+                @Override
+                public void entriesAdded(Collection<String> addresses) {
+                    for (String item : addresses) {
+                        Presence presence = roster.getPresence(item);
+                        userListMap.put(item, new BaseRoster(item, presence));
+                    }
+                    if (rosterListener != null)
+                        rosterListener.entriesAdded(addresses);
+                    if (updateListener != null) updateListener.update();
                 }
-                rosterListener.entriesAdded(addresses);
-            }
 
-            @Override
-            public void entriesUpdated(Collection<String> addresses) {
-                for (String item : addresses) {
+                @Override
+                public void entriesUpdated(Collection<String> addresses) {
+                    for (String item : addresses) {
+                        for (BaseRoster baseRoster : userListMap.values()) {
+                            if (item.contains(baseRoster.getName())) {
+                                Presence presence = roster.getPresence(item);
+                                baseRoster.setPresence(presence);
+                                break;
+                            }
+                        }
+                    }
+                    if (rosterListener != null)
+                        rosterListener.entriesUpdated(addresses);
+                    if (updateListener != null) updateListener.update();
+                }
+
+                @Override
+                public void entriesDeleted(Collection<String> addresses) {
+                    for (String item : addresses) {
+                        for (BaseRoster baseRoster : userListMap.values()) {
+                            if (item.contains(baseRoster.getName())) {
+                                userListMap.values().remove(baseRoster);
+                                break;
+                            }
+                        }
+                    }
+                    if (rosterListener != null)
+                        rosterListener.entriesDeleted(addresses);
+                    if (updateListener != null) updateListener.update();
+                }
+
+                @Override
+                public void presenceChanged(Presence presence) {
                     for (BaseRoster baseRoster : userListMap.values()) {
-                        if (item.contains(baseRoster.getName())) {
-                            Presence presence = roster.getPresence(item);
+                        if (presence.getFrom().contains(baseRoster.getName())) {
                             baseRoster.setPresence(presence);
                             break;
                         }
                     }
+                    if (rosterListener != null)
+                        rosterListener.presenceChanged(presence);
+                    if (updateListener != null) updateListener.update();
                 }
-                rosterListener.entriesUpdated(addresses);
-            }
+            };
+        } else {
+            roster.removeRosterListener(baseRosterListener);
+        }
+        roster.addRosterListener(baseRosterListener);
 
-            @Override
-            public void entriesDeleted(Collection<String> addresses) {
-                for (String item : addresses) {
-                    for (BaseRoster baseRoster : userListMap.values()) {
-                        if (item.contains(baseRoster.getName())) {
-                            userListMap.values().remove(baseRoster);
-                            break;
-                        }
-                    }
-                }
-                rosterListener.entriesDeleted(addresses);
-            }
-
-            @Override
-            public void presenceChanged(Presence presence) {
-                for (BaseRoster baseRoster : userListMap.values()) {
-                    if (presence.getFrom().contains(baseRoster.getName())) {
-                        baseRoster.setPresence(presence);
-                        break;
-                    }
-                }
-                rosterListener.presenceChanged(presence);
-            }
-        });
         return roster;
     }
 

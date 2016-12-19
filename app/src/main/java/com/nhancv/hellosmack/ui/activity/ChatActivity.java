@@ -114,13 +114,11 @@ public class ChatActivity extends AppCompatActivity {
             }
         };
 
-        chat = XmppPresenter.getInstance().preparingChat(address);
-        XmppPresenter.getInstance().openChatSession(chatSessionListener, address);
+        chat = XmppPresenter.getInstance().openChatSession(chatSessionListener, address);
 
         if (chat != null) {
             tvTitle.setText(XmppStringUtils.parseBareJid(address));
         }
-
         etInput.addTextChangedListener(editTextAutoChange);
 
     }

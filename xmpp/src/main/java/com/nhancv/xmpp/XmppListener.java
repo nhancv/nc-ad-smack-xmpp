@@ -31,5 +31,9 @@ public class XmppListener {
         void callback(T item);
     }
 
+    public interface IXmppUpdateCallback {
+        void update();
+    }
+
 
 }

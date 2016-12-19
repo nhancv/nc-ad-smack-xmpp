@@ -50,7 +50,11 @@ public interface IXmppPresenter {
     //Listener
     void removeAsyncStanzaListener(StanzaListener listener);
 
+    void removeAsyncStanzaListener(StanzaPackageType packetListener);
+
     void addAsyncStanzaListener(StanzaPackageType packetListener);
+
+    void addMessageStanzaListener(XmppListener.IXmppCallback<Stanza> messageStanzaListener);
 
     void addAsyncStanzaListener(StanzaListener packetListener, StanzaFilter packetFilter);
 
@@ -59,19 +63,20 @@ public interface IXmppPresenter {
     void setAutoAcceptSubscribe();
 
     //Chat
-    Chat preparingChat(String toJid);
-
-    void openChatSession(StanzaListener listener, String toJid);
+    Chat openChatSession(StanzaListener listener, String toJid);
 
     void closeChatSession(StanzaListener listener);
 
     //User list
-    Roster setupRosterList(RosterListener rosterListener);
+    Roster setupRosterList(@NonNull RosterListener rosterListener);
+
+    Roster setupRosterList(@NonNull XmppListener.IXmppUpdateCallback updateListener);
+
+    Roster setupRosterList(RosterListener rosterListener, XmppListener.IXmppUpdateCallback updateListener);
 
     List<BaseRoster> getCurrentRosterList();
 
     BaseRoster getRoster(String rosterJid);
-
 
 
 }
