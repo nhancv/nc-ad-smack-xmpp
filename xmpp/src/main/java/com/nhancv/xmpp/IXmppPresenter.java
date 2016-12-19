@@ -30,6 +30,8 @@ public interface IXmppPresenter {
     void createUser(String userJid, String password, XmppListener.IXmppCreateListener createConnectionListener)
             throws XMPPException, IOException, SmackException;
 
+    void logout() throws SmackException.NotConnectedException;
+
     String getCurrentUser();
 
     //Invite/request

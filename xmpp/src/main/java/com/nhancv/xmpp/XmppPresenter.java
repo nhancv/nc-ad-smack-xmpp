@@ -64,8 +64,6 @@ public class XmppPresenter implements IXmppPresenter {
         xmppConnector = new XmppConnector();
         xmppConnector.setupLoginConnection(xmppCredential, loginConnectionListener);
         xmppConnector.createConnection();
-
-
     }
 
     @Override
@@ -102,6 +100,12 @@ public class XmppPresenter implements IXmppPresenter {
             }
         });
         xmppConnector.createConnection();
+    }
+
+    @Override
+    public void logout() throws SmackException.NotConnectedException {
+        userListMap.clear();
+        xmppConnector.terminalConnection();
     }
 
     @Override

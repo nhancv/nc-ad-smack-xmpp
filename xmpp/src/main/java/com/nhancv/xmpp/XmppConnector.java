@@ -51,6 +51,16 @@ public class XmppConnector implements IXmppConnector {
         setupXmppTcpConnection();
     }
 
+    /**
+     * If you want to implement http://xmpp.org/extensions/xep-0013.html (Flexible Offline Message Retrieval)
+     * You have to set OfflineMessageManager before init presence available
+     * https://docs.ejabberd.im/admin/guide/xep/#toc_12
+     * <p>
+     * In smack to do this: set send presence flag to false in config
+     * configBuilder.setSendPresence(false);
+     * set offline message manager and get message count
+     * send stanza presence available (sendStanza(new Presence(Presence.Type.available));)
+     */
     private void setupXmppTcpConnection() {
         XMPPTCPConnectionConfiguration.Builder configBuilder = XMPPTCPConnectionConfiguration.builder();
         if (xmppCredential != null) {
@@ -63,10 +73,13 @@ public class XmppConnector implements IXmppConnector {
         configBuilder.setHost(xmppConfig.getHost());
         configBuilder.setPort(xmppConfig.getPort());
         configBuilder.setDebuggerEnabled(false);
+//        For offline message
+//        configBuilder.setSendPresence(false);
 
         connection = new XMPPTCPConnection(configBuilder.build());
         connection.setPacketReplyTimeout(5000);
         connection.addConnectionListener(connectionListener);
+
     }
 
     @Override

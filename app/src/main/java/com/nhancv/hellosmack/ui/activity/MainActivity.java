@@ -64,7 +64,8 @@ public class MainActivity extends AppCompatActivity {
                         NPreferences.getInstance().edit().clear();
                         //Terminal current connection
                         try {
-                            XmppPresenter.getInstance().getXmppConnector().terminalConnection();
+
+                            XmppPresenter.getInstance().logout();
                         } catch (SmackException.NotConnectedException e) {
                             e.printStackTrace();
                         }

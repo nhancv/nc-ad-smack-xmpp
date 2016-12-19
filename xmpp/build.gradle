@@ -43,8 +43,8 @@ dependencies {
     testCompile 'junit:junit:4.12'
 
     //Smack xmpp client
-    compile 'org.igniterealtime.smack:smack-android:4.1.8'
-    compile 'org.igniterealtime.smack:smack-tcp:4.1.8'
-    compile 'org.igniterealtime.smack:smack-im:4.1.8'
-    compile 'org.igniterealtime.smack:smack-extensions:4.1.8'
+    compile 'org.igniterealtime.smack:smack-android:4.1.9'
+    compile 'org.igniterealtime.smack:smack-tcp:4.1.9'
+    compile 'org.igniterealtime.smack:smack-im:4.1.9'
+    compile 'org.igniterealtime.smack:smack-extensions:4.1.9'
 }
