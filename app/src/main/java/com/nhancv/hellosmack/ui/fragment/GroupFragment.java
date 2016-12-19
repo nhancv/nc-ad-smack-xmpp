@@ -5,7 +5,7 @@ import android.widget.Button;
 
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.helper.NUtil;
-import com.nhancv.xmpp.BaseRoster;
+import com.nhancv.xmpp.model.BaseRoster;
 import com.nhancv.xmpp.XmppPresenter;
 
 import org.androidannotations.annotations.AfterViews;

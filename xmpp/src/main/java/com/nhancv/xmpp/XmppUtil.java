@@ -33,6 +33,10 @@ public class XmppUtil {
         return xmlMessage.matches("(.*)<body>(.*)</body>(.*)");
     }
 
+    public static boolean isOfflineStorage(String xmlMessage) {
+        return xmlMessage.matches("(.*)<delay xmlns='urn:xmpp:delay'(.*)</delay>(.*)");
+    }
+
     public static ChatState getChatState(String xmlMessage) {
         if (isActive(xmlMessage)) return ChatState.active;
         if (isComposing(xmlMessage)) return ChatState.composing;

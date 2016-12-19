@@ -1,4 +1,4 @@
-package com.nhancv.xmpp;
+package com.nhancv.xmpp.model;
 
 import org.jivesoftware.smack.packet.Presence;
 

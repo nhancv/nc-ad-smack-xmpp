@@ -12,7 +12,7 @@ import android.widget.TextView;
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.helper.NUtil;
 import com.nhancv.hellosmack.ui.activity.ChatActivity_;
-import com.nhancv.xmpp.BaseRoster;
+import com.nhancv.xmpp.model.BaseRoster;
 import com.nhancv.xmpp.XmppPresenter;
 
 import org.jivesoftware.smack.SmackException;
@@ -57,7 +57,7 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.ListsHolder>
         holder.tvName.setText(user.getName());
         holder.tvLastMsg.setText(user.getLastMessage());
         holder.vItem.setOnClickListener(v -> {
-            ChatActivity_.intent(holder.itemView.getContext()).address(user.getPresence().getFrom()).start();
+            ChatActivity_.intent(holder.itemView.getContext()).address(user.getName()).start();
         });
         holder.vItem.setOnLongClickListener(v -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());

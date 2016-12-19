@@ -4,6 +4,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -12,9 +13,10 @@ import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.helper.NTextChange;
 import com.nhancv.hellosmack.helper.NUtil;
 import com.nhancv.hellosmack.ui.adapter.ChatAdapter;
-import com.nhancv.xmpp.BaseRoster;
 import com.nhancv.xmpp.XmppPresenter;
 import com.nhancv.xmpp.XmppUtil;
+import com.nhancv.xmpp.model.BaseMessage;
+import com.nhancv.xmpp.model.BaseRoster;
 
 import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.Click;
@@ -28,6 +30,8 @@ import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smackx.chatstates.ChatState;
 import org.jivesoftware.smackx.chatstates.ChatStateManager;
 import org.jxmpp.util.XmppStringUtils;
+
+import java.util.List;
 
 /**
  * Created by nhancao on 9/7/16.
@@ -47,7 +51,7 @@ public class ChatActivity extends AppCompatActivity {
 
     @Extra
     String address;
-
+    private List<BaseMessage> listBasemessage;
     private Chat chat;
     private ChatAdapter adapter;
     private StanzaListener chatSessionListener;
@@ -83,21 +87,18 @@ public class ChatActivity extends AppCompatActivity {
         vListsItems.setLayoutManager(llm);
         vListsItems.setAdapter(adapter);
 
-        chatStateManager = ChatStateManager.getInstance(XmppPresenter.getInstance().getXmppConnector().getConnection());
-
+        chatStateManager = XmppPresenter.getInstance().getChatStateManager();
+        listBasemessage = XmppPresenter.getInstance().getMessageList(address);
+        adapter.setListsItems(listBasemessage);
         chatSessionListener = packet -> {
             if (packet instanceof Message) {
                 Message message = (Message) packet;
-                BaseRoster roster = XmppPresenter
-                        .getInstance()
-                        .getRoster(XmppStringUtils.parseBareJid(message.getFrom()));
-                if (roster != null && roster
-                        .getPresence()
-                        .isAvailable()) {
+                BaseRoster roster = XmppPresenter.getInstance().getRoster(message.getFrom());
+                if (roster.getPresence().isAvailable()) {
                     String xml = message.toXML().toString();
                     if (XmppUtil.isMessage(xml)) {
                         NUtil.runOnUi(() -> {
-                            adapter.addMessage(message);
+                            adapter.notifyDataSetChanged();
                             vListsItems.smoothScrollToPosition(adapter.getItemCount());
                         });
                     } else {
@@ -121,17 +122,32 @@ public class ChatActivity extends AppCompatActivity {
         }
         etInput.addTextChangedListener(editTextAutoChange);
 
+        vListsItems.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    int top = llm.findFirstCompletelyVisibleItemPosition();
+                    int bot = llm.findLastCompletelyVisibleItemPosition();
+                    for (int i = top; i <= bot; i++) {
+                        listBasemessage.get(i).setRead(true);
+                    }
+                    adapter.notifyDataSetChanged();
+                }
+            }
+        });
+
     }
 
     @Click(R.id.btSend)
     void btSendOnClick() {
         try {
             if (etInput.getText().length() > 0) {
-                Message message = new Message(chat.getParticipant());
+                Message message = new Message(address);
                 message.setBody(etInput.getText().toString());
                 chat.sendMessage(message);
 
-                adapter.addMessage(message);
+                listBasemessage.add(new BaseMessage(message, true));
+                adapter.notifyDataSetChanged();
                 vListsItems.smoothScrollToPosition(adapter.getItemCount());
             }
         } catch (SmackException.NotConnectedException e) {

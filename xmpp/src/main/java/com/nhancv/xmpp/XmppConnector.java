@@ -3,6 +3,9 @@ package com.nhancv.xmpp;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+import com.nhancv.xmpp.listener.AbstractXmppConListener;
+import com.nhancv.xmpp.listener.XmppListener;
+
 import org.jivesoftware.smack.AbstractXMPPConnection;
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.SmackException;
@@ -74,7 +77,7 @@ public class XmppConnector implements IXmppConnector {
         configBuilder.setPort(xmppConfig.getPort());
         configBuilder.setDebuggerEnabled(false);
 //        For offline message
-        configBuilder.setSendPresence(false);
+//        configBuilder.setSendPresence(false);
 
         connection = new XMPPTCPConnection(configBuilder.build());
         connection.setPacketReplyTimeout(5000);

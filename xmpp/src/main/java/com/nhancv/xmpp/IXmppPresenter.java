@@ -2,6 +2,10 @@ package com.nhancv.xmpp;
 
 import android.support.annotation.NonNull;
 
+import com.nhancv.xmpp.listener.XmppListener;
+import com.nhancv.xmpp.model.BaseMessage;
+import com.nhancv.xmpp.model.BaseRoster;
+
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.XMPPException;
@@ -11,6 +15,8 @@ import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.packet.Stanza;
 import org.jivesoftware.smack.roster.Roster;
 import org.jivesoftware.smack.roster.RosterListener;
+import org.jivesoftware.smackx.chatstates.ChatStateManager;
+import org.jivesoftware.smackx.offline.OfflineMessageManager;
 
 import java.io.IOException;
 import java.util.List;
@@ -66,6 +72,12 @@ public interface IXmppPresenter {
     Chat openChatSession(StanzaListener listener, String toJid);
 
     void closeChatSession(StanzaListener listener);
+
+    OfflineMessageManager getOfflineMessageManager();
+
+    ChatStateManager getChatStateManager();
+
+    List<BaseMessage> getMessageList(String jid);
 
     //User list
     Roster setupRosterList(@NonNull RosterListener rosterListener);

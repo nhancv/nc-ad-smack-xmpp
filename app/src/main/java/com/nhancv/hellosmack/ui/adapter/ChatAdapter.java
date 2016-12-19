@@ -1,5 +1,6 @@
 package com.nhancv.hellosmack.ui.adapter;
 
+import android.graphics.Color;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -7,8 +8,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.nhancv.hellosmack.R;
-
-import org.jivesoftware.smack.packet.Message;
+import com.nhancv.xmpp.model.BaseMessage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +21,7 @@ import butterknife.ButterKnife;
  */
 public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ListsHolder> {
 
-    private List<Message> listsItems;
+    private List<BaseMessage> listsItems;
 
     public ChatAdapter() {
         this.listsItems = new ArrayList<>();
@@ -32,9 +32,14 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ListsHolder> {
      *
      * @param message
      */
-    public void addMessage(Message message) {
+    public void addMessage(BaseMessage message) {
         listsItems.add(message);
         notifyItemInserted(listsItems.size());
+    }
+
+    public void setListsItems(List<BaseMessage> listsItems) {
+        this.listsItems = listsItems;
+        notifyDataSetChanged();
     }
 
     @Override
@@ -47,9 +52,14 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ListsHolder> {
 
     @Override
     public void onBindViewHolder(ChatAdapter.ListsHolder holder, int position) {
-        Message message = listsItems.get(position);
-        holder.tvTo.setText(message.getTo());
-        holder.tvMsg.setText(message.getBody());
+        BaseMessage baseMessage = listsItems.get(position);
+        holder.tvTo.setText(baseMessage.getMessage().getTo());
+        holder.tvMsg.setText(baseMessage.getMessage().getBody());
+        if (baseMessage.isRead()) {
+            holder.tvTo.setTextColor(Color.BLACK);
+        } else {
+            holder.tvTo.setTextColor(Color.BLUE);
+        }
 
     }
 

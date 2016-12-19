@@ -2,6 +2,8 @@ package com.nhancv.xmpp;
 
 import android.support.annotation.NonNull;
 
+import com.nhancv.xmpp.listener.XmppListener;
+
 import org.jivesoftware.smack.AbstractXMPPConnection;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPException;

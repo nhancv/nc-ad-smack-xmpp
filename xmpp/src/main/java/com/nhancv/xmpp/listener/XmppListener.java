@@ -1,4 +1,4 @@
-package com.nhancv.xmpp;
+package com.nhancv.xmpp.listener;
 
 import org.jivesoftware.smack.SmackException;
 
