@@ -16,8 +16,6 @@ import com.nhancv.hellosmack.ui.activity.ChatActivity_;
 import com.nhancv.xmpp.XmppPresenter;
 import com.nhancv.xmpp.model.BaseRoster;
 
-import org.jivesoftware.smack.SmackException;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,11 +64,7 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.ListsHolder>
             builder.setMessage("Are you sure to remove this contact?");
             // Set up the buttons
             builder.setPositiveButton("OK", (dialog, which) -> {
-                try {
-                    XmppPresenter.getInstance().sendUnFriendRequest(user.getName());
-                } catch (SmackException.NotConnectedException e) {
-                    e.printStackTrace();
-                }
+                XmppPresenter.getInstance().sendUnFriendRequest(user.getName());
             });
             builder.setNegativeButton("Cancel", (dialog, which) -> {
                 dialog.cancel();

@@ -8,6 +8,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
 import com.nhancv.hellosmack.listener.ICollections;
 
 import rx.Observable;
@@ -167,5 +168,15 @@ public class NUtil {
         int green = Color.green(color);
         int blue = Color.blue(color);
         return Color.argb(alpha, red, green, blue);
+    }
+
+    /**
+     * Convert object class to string
+     *
+     * @param clsObject
+     * @return
+     */
+    public static String toString(Object clsObject) {
+        return clsObject.getClass().getName() + ": " + new Gson().toJson(clsObject);
     }
 }

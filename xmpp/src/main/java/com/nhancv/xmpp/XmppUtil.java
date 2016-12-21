@@ -8,6 +8,9 @@ import org.jivesoftware.smackx.chatstates.ChatState;
 
 public class XmppUtil {
 
+    public static boolean isDelivered(String xmlMessage) {
+        return xmlMessage.matches("(.*)<received xmlns='urn:xmpp:receipts' id='(.*)'/>(.*)");
+    }
 
     public static boolean isActive(String xmlMessage) {
         return xmlMessage.matches("(.*)<" + ChatState.active.name() + "(.*)/>(.*)");

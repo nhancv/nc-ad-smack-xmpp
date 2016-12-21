@@ -56,25 +56,12 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ListsHolder> {
 
         BaseMessage baseMessage = listsItems.get(position);
         String to = baseMessage.getMessage().getTo();
-        boolean isLeft = XmppStringUtils.parseBareJid(to).contains(
+        boolean isLeft = !XmppStringUtils.parseBareJid(to).contains(
                 parseBareJid(XmppPresenter.getInstance().getCurrentUser()));
 
-        holder.tvTo.setText(baseMessage.getMessage().getTo());
+        String title = baseMessage.getMessage().getTo() + (isLeft ? (baseMessage.isDelivered() ? " - delivered" : " - sent") : "");
+        holder.tvTo.setText(title);
         holder.tvMsg.setText(baseMessage.getMessage().getBody());
-        if (position == getItemCount() - 1) {
-            holder.itemView.setAnimation(isLeft ? anim_left : anim_right);
-            holder.itemView.animate().setListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationStart(Animator animation) {
-                    holder.itemView.setAlpha(0f);
-                }
-
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    holder.itemView.setAlpha(1f);
-                }
-            }).start();
-        }
 
         if (baseMessage.isRead()) {
             holder.vItem.setBackgroundResource(isLeft ? R.drawable.chat_left_read : R.drawable.chat_right_read);
@@ -82,6 +69,20 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ListsHolder> {
         } else {
             holder.vItem.setBackgroundResource(isLeft ? R.drawable.chat_left_unread : R.drawable.chat_right_unread);
             holder.tvTo.setTextColor(Color.BLUE);
+            if (position == getItemCount() - 1) {
+                holder.itemView.setAnimation(isLeft ? anim_left : anim_right);
+                holder.itemView.animate().setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationStart(Animator animation) {
+                        holder.itemView.setAlpha(0f);
+                    }
+
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        holder.itemView.setAlpha(1f);
+                    }
+                }).start();
+            }
         }
 
     }

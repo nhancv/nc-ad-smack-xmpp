@@ -16,7 +16,6 @@ import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.Click;
 import org.androidannotations.annotations.EFragment;
 import org.androidannotations.annotations.ViewById;
-import org.jivesoftware.smack.SmackException;
 
 /**
  * Created by Nhan Cao on 06-Sep-16.
@@ -41,13 +40,6 @@ public class UsersFragment extends Fragment {
         adapter = new UsersAdapter();
         vListsItems.setAdapter(adapter);
 
-        NUtil.aSyncTask(subscriber -> {
-            XmppPresenter.getInstance().setAutoAcceptSubscribe();
-            XmppPresenter.getInstance().addMessageStanzaListener(message -> UsersFragment.this.updateAdapterList());
-
-            XmppPresenter.getInstance().setupRosterList(this::updateAdapterList);
-            updateAdapterList();
-        });
     }
 
     @Click(R.id.btAddContact)
@@ -55,7 +47,7 @@ public class UsersFragment extends Fragment {
         addContact.show();
     }
 
-    private void updateAdapterList() {
+    public void updateAdapterList() {
         NUtil.runOnUi(() -> {
             adapter.setListsItems(XmppPresenter.getInstance().getCurrentRosterList());
         });
@@ -76,11 +68,7 @@ public class UsersFragment extends Fragment {
 
             // Set up the buttons
             builder.setPositiveButton("OK", (dialog, which) -> {
-                try {
-                    XmppPresenter.getInstance().sendInviteRequest(input.getText().toString());
-                } catch (SmackException.NotConnectedException e) {
-                    e.printStackTrace();
-                }
+                XmppPresenter.getInstance().sendInviteRequest(input.getText().toString());
             });
             builder.setNegativeButton("Cancel", (dialog, which) -> {
                 dialog.cancel();

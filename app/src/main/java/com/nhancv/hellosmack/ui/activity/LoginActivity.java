@@ -14,6 +14,7 @@ import android.widget.EditText;
 
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.helper.NUtil;
+import com.nhancv.hellosmack.helper.XmppService_;
 import com.nhancv.npreferences.NPreferences;
 import com.nhancv.xmpp.XmppPresenter;
 import com.nhancv.xmpp.listener.XmppListener;
@@ -137,6 +138,7 @@ public class LoginActivity extends AppCompatActivity {
                             NPreferences.getInstance().edit().clear();
                         }
 
+                        XmppService_.intent(getApplication()).start();
                         MainActivity_.intent(LoginActivity.this).start();
                         finish();
                     }

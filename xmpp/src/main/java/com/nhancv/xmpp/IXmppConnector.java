@@ -30,6 +30,6 @@ public interface IXmppConnector {
 
     IXmppConfig getXmppConfig();
 
-    boolean isLoginConnection();
+    boolean isCredentialSetup();
 
 }

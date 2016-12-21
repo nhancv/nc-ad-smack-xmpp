@@ -8,30 +8,33 @@ import org.jivesoftware.smack.ConnectionListener;
  * Created by nhancao on 12/13/16.
  */
 
-public abstract class AbstractXmppConListener implements ConnectionListener {
+public abstract class AuthXmppConListener implements ConnectionListener {
+
+    private static final String TAG = AuthXmppConListener.class.getSimpleName();
+
     @Override
     public void connectionClosed() {
-        Log.d("xmpp", "Connection Closed!");
+        Log.e(TAG, "Connection Closed!");
     }
 
     @Override
     public void connectionClosedOnError(final Exception e) {
-        Log.d("xmpp", "ConnectionClosedOn Error!");
+        Log.e(TAG, "connectionClosedOnError: " + e.getMessage());
     }
 
     @Override
     public void reconnectingIn(int arg0) {
-        Log.d("xmpp", "Reconnecting... " + arg0);
+        Log.d(TAG, "Reconnecting... " + arg0);
     }
 
     @Override
     public void reconnectionFailed(Exception arg0) {
-        Log.d("xmpp", "ReconnectionFailed!");
+        Log.d(TAG, "Reconnection Failed!");
     }
 
     @Override
     public void reconnectionSuccessful() {
-        Log.d("xmpp", "ReconnectionSuccessful");
+        Log.d(TAG, "Reconnection Successful");
     }
 
 }

@@ -11,24 +11,36 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
 import com.nhancv.hellosmack.R;
+import com.nhancv.hellosmack.bus.MessageBus;
+import com.nhancv.hellosmack.bus.RosterBus;
+import com.nhancv.hellosmack.bus.XmppConnBus;
 import com.nhancv.hellosmack.helper.NUtil;
+import com.nhancv.hellosmack.helper.XmppService;
+import com.nhancv.hellosmack.helper.XmppService_;
+import com.nhancv.hellosmack.ui.fragment.GroupFragment;
 import com.nhancv.hellosmack.ui.fragment.GroupFragment_;
+import com.nhancv.hellosmack.ui.fragment.UsersFragment;
 import com.nhancv.hellosmack.ui.fragment.UsersFragment_;
 import com.nhancv.npreferences.NPreferences;
 import com.nhancv.xmpp.XmppPresenter;
+import com.nhancv.xmpp.model.BaseMessage;
+import com.nhancv.xmpp.model.BaseRoster;
 
 import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.EActivity;
 import org.androidannotations.annotations.ViewById;
-import org.jivesoftware.smack.SmackException;
+import org.greenrobot.eventbus.Subscribe;
 import org.jxmpp.util.XmppStringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.nhancv.hellosmack.R.id.logout;
 
 @EActivity(R.layout.activity_main)
 public class MainActivity extends AppCompatActivity {
@@ -48,6 +60,8 @@ public class MainActivity extends AppCompatActivity {
     TextView tvName;
 
     ViewPagerAdapter adapter;
+    UsersFragment usersFragment = new UsersFragment_();
+    GroupFragment groupFragment = new GroupFragment_();
 
     @AfterViews
     void initView() {
@@ -55,6 +69,63 @@ public class MainActivity extends AppCompatActivity {
         setupViewPager(vViewPager);
         vTabs.setupWithViewPager(vViewPager);
         initNavigationDrawer();
+    }
+
+    @Subscribe
+    public void xmppConnSubscribe(XmppConnBus xmppConnBus) {
+        Log.e(TAG, "xmppConnSubscribe: " + xmppConnBus.getType());
+        switch (xmppConnBus.getType()) {
+            case CLOSE_ERROR:
+                NUtil.showToast(this, ((Exception) xmppConnBus.getData()).getMessage());
+                logout();
+                break;
+            default:
+                NUtil.showToast(this, xmppConnBus.getType().name());
+                break;
+
+        }
+    }
+
+    @Subscribe
+    public void messageSubscribe(MessageBus messageBus) {
+        BaseMessage baseMessage = (BaseMessage) messageBus.getData();
+        if (baseMessage != null) {
+            Log.e(TAG, "messageSubscribe: " + baseMessage);
+        }
+        usersFragment.updateAdapterList();
+    }
+
+    @Subscribe
+    public void rosterSubscribe(RosterBus rosterBus) {
+        BaseRoster baseRoster = ((BaseRoster) rosterBus.getData());
+        String status = (baseRoster != null ? baseRoster.getName() + " -> " + baseRoster.getPresence().getType() : null);
+        if (status != null) {
+            Log.e(TAG, "rosterSubscribe: " + status);
+        }
+        usersFragment.updateAdapterList();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        XmppService.getBus().register(this);
+        if (XmppPresenter.getInstance().isConnected()) {
+            usersFragment.updateAdapterList();
+        } else {
+            logout();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        XmppService.getBus().unregister(this);
+        super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        XmppService_.intent(getApplication()).stop();
+        super.onDestroy();
     }
 
     private void setupToolbar(Toolbar toolbar, String title) {
@@ -69,22 +140,9 @@ public class MainActivity extends AppCompatActivity {
         vNavigation.setNavigationItemSelectedListener(menuItem -> {
             int id = menuItem.getItemId();
             switch (id) {
-                case R.id.logout:
+                case logout:
                     vDrawer.closeDrawers();
-                    NUtil.aSyncTask(subscriber -> {
-                        //Clear preference
-                        NPreferences.getInstance().edit().clear();
-                        //Terminal current connection
-                        try {
-
-                            XmppPresenter.getInstance().logout();
-                        } catch (SmackException.NotConnectedException e) {
-                            e.printStackTrace();
-                        }
-                        //Transmit to login screen
-                        LoginActivity_.intent(MainActivity.this).start();
-                        finish();
-                    });
+                    logout();
                     break;
             }
             return true;
@@ -108,10 +166,24 @@ public class MainActivity extends AppCompatActivity {
         actionBarDrawerToggle.syncState();
     }
 
+    private void logout() {
+        NUtil.aSyncTask(subscriber -> {
+            //Clear preference
+            NPreferences.getInstance().edit().clear();
+            //Terminal current connection
+            XmppPresenter.getInstance().logout();
+            //Stop service
+            XmppService_.intent(getApplication()).stop();
+            //Transmit to login screen
+            LoginActivity_.intent(MainActivity.this).start();
+            finish();
+        });
+    }
+
     private void setupViewPager(ViewPager viewPager) {
         adapter = new ViewPagerAdapter(getSupportFragmentManager());
-        adapter.addFragment(new UsersFragment_(), "Users");
-        adapter.addFragment(new GroupFragment_(), "Group");
+        adapter.addFragment(usersFragment, "Users");
+        adapter.addFragment(groupFragment, "Group");
         viewPager.setAdapter(adapter);
     }
 

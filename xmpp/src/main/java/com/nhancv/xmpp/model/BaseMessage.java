@@ -10,6 +10,7 @@ public class BaseMessage {
 
     private Message message;
     private boolean read;
+    private boolean delivered;
 
     public BaseMessage(Message message) {
         this(message, false);
@@ -18,6 +19,7 @@ public class BaseMessage {
     public BaseMessage(Message message, boolean read) {
         this.message = message;
         this.read = read;
+        this.delivered = false;
     }
 
     public Message getMessage() {
@@ -34,5 +36,13 @@ public class BaseMessage {
 
     public void setRead(boolean read) {
         this.read = read;
+    }
+
+    public boolean isDelivered() {
+        return delivered;
+    }
+
+    public void setDelivered(boolean delivered) {
+        this.delivered = delivered;
     }
 }

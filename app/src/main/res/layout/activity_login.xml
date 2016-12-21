@@ -29,6 +29,7 @@
                 android:id="@+id/etUser"
                 android:layout_width="match_parent"
                 android:layout_height="45dp"
+                android:fontFamily="sans-serif-medium"
                 android:hint="User name: (admin)"
                 android:textSize="18sp"/>
 
@@ -43,6 +44,7 @@
                 android:id="@+id/etPwd"
                 android:layout_width="match_parent"
                 android:layout_height="45dp"
+                android:fontFamily="sans-serif-medium"
                 android:hint="Password: (123321)"
                 android:inputType="textPassword"
                 android:textSize="18sp"/>
@@ -54,6 +56,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:checked="true"
+            android:fontFamily="sans-serif-light"
             android:text="Remember?"/>
 
         <Button
@@ -62,6 +65,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
+            android:fontFamily="sans-serif-medium"
             android:text="Sign In"/>
 
         <View
@@ -76,6 +80,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
+            android:fontFamily="sans-serif-black"
             android:text="Sign Up"/>
     </LinearLayout>
 

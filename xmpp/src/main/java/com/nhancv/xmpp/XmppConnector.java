@@ -3,7 +3,7 @@ package com.nhancv.xmpp;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
-import com.nhancv.xmpp.listener.AbstractXmppConListener;
+import com.nhancv.xmpp.listener.AuthXmppConListener;
 import com.nhancv.xmpp.listener.XmppListener;
 
 import org.jivesoftware.smack.AbstractXMPPConnection;
@@ -30,13 +30,12 @@ public class XmppConnector implements IXmppConnector {
     private XmppListener.IXmppConnListener createConnectionListener;
 
     private AbstractXMPPConnection connection;
-    private AbstractXmppConListener connectionListener;
+    private AuthXmppConListener connectionListener;
 
     public XmppConnector() {
         xmppConfig = new XmppConfig();
         connectionListener = new XmppConnectionListener();
     }
-
 
     @Override
     public void setupLoginConnection(@NonNull IXmppCredential _xmppCredential, @NonNull XmppListener.IXmppLoginListener _loginConnectionListener) {
@@ -111,14 +110,14 @@ public class XmppConnector implements IXmppConnector {
     }
 
     @Override
-    public boolean isLoginConnection() {
+    public boolean isCredentialSetup() {
         return xmppCredential != null;
     }
 
-    private class XmppConnectionListener extends AbstractXmppConListener {
+    public class XmppConnectionListener extends AuthXmppConListener {
         @Override
         public void connected(final XMPPConnection connection) {
-            if (!isLoginConnection()) {
+            if (!isCredentialSetup()) {
                 createConnectionListener.success();
             } else if (!connection.isAuthenticated()) {
                 try {
@@ -127,16 +126,17 @@ public class XmppConnector implements IXmppConnector {
                     loginConnectionListener.loginError(e);
                 }
             }
-            Log.d("xmpp", "Connected!");
+            Log.d(TAG, "connected");
         }
 
         @Override
         public void authenticated(XMPPConnection arg0, boolean arg1) {
-            if (isLoginConnection()) {
+            if (isCredentialSetup()) {
                 loginConnectionListener.loginSuccess();
             }
-            Log.d("xmpp", "Authenticated!");
+            Log.d(TAG, "Authenticated!");
         }
+
     }
 
 

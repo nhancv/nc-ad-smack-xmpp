@@ -7,6 +7,7 @@ import com.nhancv.xmpp.listener.XmppListener;
 import com.nhancv.xmpp.model.BaseMessage;
 import com.nhancv.xmpp.model.BaseRoster;
 
+import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.XMPPConnection;
@@ -32,6 +33,7 @@ import org.jivesoftware.smackx.muc.InvitationListener;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.muc.MultiUserChatManager;
 import org.jivesoftware.smackx.offline.OfflineMessageManager;
+import org.jivesoftware.smackx.receipts.DeliveryReceiptManager;
 import org.jivesoftware.smackx.search.ReportedData;
 import org.jivesoftware.smackx.search.UserSearchManager;
 import org.jivesoftware.smackx.xdata.Form;
@@ -114,138 +116,204 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
-    public void logout() throws SmackException.NotConnectedException {
+    public void logout() {
         userListMap.clear();
         messageListMap.clear();
-        xmppConnector.terminalConnection();
+
+        if (isConnected()) {
+            try {
+                xmppConnector.terminalConnection();
+            } catch (SmackException.NotConnectedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
-    public void sendStanza(@NonNull Stanza packet) throws SmackException.NotConnectedException {
-        xmppConnector.getConnection().sendStanza(packet);
+    public void connectionListenerRegister(ConnectionListener connectionListener) {
+        if (isConnected()) {
+            xmppConnector.getConnection().addConnectionListener(connectionListener);
+        }
     }
 
     @Override
-    public void sendInviteRequest(String userJid) throws SmackException.NotConnectedException {
-        Presence subscribe = new Presence(Presence.Type.subscribe);
-        subscribe.setTo(userJid);
-        sendStanza(subscribe);
+    public boolean isConnected() {
+        return xmppConnector != null && xmppConnector.getConnection().isConnected();
     }
 
     @Override
-    public void acceptInviteRequest(String userJid) throws SmackException.NotConnectedException {
-        Presence subscribe = new Presence(Presence.Type.subscribed);
-        subscribe.setTo(userJid);
-        sendStanza(subscribe);
-
-        subscribe.setType(Presence.Type.subscribe);
-        sendStanza(subscribe);
+    public void sendStanza(@NonNull Stanza packet) {
+        if (isConnected()) {
+            try {
+                xmppConnector.getConnection().sendStanza(packet);
+            } catch (SmackException.NotConnectedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
-    public void sendUnFriendRequest(String userJid) throws SmackException.NotConnectedException {
-        RosterPacket subscribe = new RosterPacket();
-        subscribe.setType(IQ.Type.set);
-        RosterPacket.Item item = new RosterPacket.Item(userJid, null);
-        item.setItemType(RosterPacket.ItemType.remove);
-        subscribe.addRosterItem(item);
-        sendStanza(subscribe);
+    public void sendInviteRequest(String userJid) {
+        if (isConnected()) {
+            Presence subscribe = new Presence(Presence.Type.subscribe);
+            subscribe.setTo(userJid);
+            sendStanza(subscribe);
+        }
     }
 
     @Override
-    public void acceptUnFriendRequest(String userJid) throws SmackException.NotConnectedException {
-        Presence subscribe = new Presence(Presence.Type.unsubscribed);
-        subscribe.setTo(userJid);
-        sendStanza(subscribe);
+    public void acceptInviteRequest(String userJid) {
+        if (isConnected()) {
+            Presence subscribe = new Presence(Presence.Type.subscribed);
+            subscribe.setTo(userJid);
+            sendStanza(subscribe);
+
+            subscribe.setType(Presence.Type.subscribe);
+            sendStanza(subscribe);
+        }
+    }
+
+    @Override
+    public void sendUnFriendRequest(String userJid) {
+        if (isConnected()) {
+            RosterPacket subscribe = new RosterPacket();
+            subscribe.setType(IQ.Type.set);
+            RosterPacket.Item item = new RosterPacket.Item(userJid, null);
+            item.setItemType(RosterPacket.ItemType.remove);
+            subscribe.addRosterItem(item);
+            sendStanza(subscribe);
+        }
+    }
+
+    @Override
+    public void acceptUnFriendRequest(String userJid) {
+        if (isConnected()) {
+            Presence subscribe = new Presence(Presence.Type.unsubscribed);
+            subscribe.setTo(userJid);
+            sendStanza(subscribe);
+        }
     }
 
     @Override
     public void removeAsyncStanzaListener(StanzaListener listener) {
-        xmppConnector.getConnection().removeAsyncStanzaListener(listener);
+        if (isConnected()) {
+            xmppConnector.getConnection().removeAsyncStanzaListener(listener);
+        }
     }
 
     @Override
     public void removeAsyncStanzaListener(StanzaPackageType packetListener) {
-        removeAsyncStanzaListener(packetListener.getStanzaListener());
+        if (isConnected()) {
+            removeAsyncStanzaListener(packetListener.getStanzaListener());
+        }
     }
 
     @Override
     public void addAsyncStanzaListener(StanzaPackageType packetListener) {
-        addAsyncStanzaListener(packetListener.getStanzaListener(),
-                new StanzaTypeFilter(packetListener.getPacketType()));
+        if (isConnected()) {
+            addAsyncStanzaListener(packetListener.getStanzaListener(),
+                    new StanzaTypeFilter(packetListener.getPacketType()));
+        }
     }
 
     @Override
-    public void addMessageStanzaListener(XmppListener.IXmppCallback<Stanza> messageStanzaListener) {
-        StanzaPackageType messagePackageType = new StanzaPackageType(packet -> {
-            if (packet instanceof Message) {
-                Message message = (Message) packet;
-                for (BaseRoster baseRoster : userListMap.values()) {
-                    String xml = message.toXML().toString();
-                    String jid = XmppStringUtils.parseBareJid(baseRoster.getName());
+    public void addMessageStanzaListener(XmppListener.IXmppCallback<BaseMessage> messageStanzaListener) {
+        if (isConnected()) {
+            StanzaPackageType messagePackageType = new StanzaPackageType(packet -> {
+                if (packet instanceof Message) {
+                    Message message = (Message) packet;
+                    for (BaseRoster baseRoster : userListMap.values()) {
+                        String xml = message.toXML().toString();
+                        String jid = XmppStringUtils.parseBareJid(baseRoster.getName());
 
-                    if ((baseRoster.getPresence().isAvailable() || XmppUtil.isOfflineStorage(xml))
-                            && message.getFrom() != null && message.getFrom().contains(jid)
-                            && XmppUtil.isMessage(xml)) {
-                        List<BaseMessage> messageList = new ArrayList<>();
-                        if (messageListMap.containsKey(jid)) {
-                            messageList = messageListMap.get(jid);
+                        if ((baseRoster.getPresence().isAvailable() || XmppUtil.isOfflineStorage(xml))
+                                && message.getFrom() != null && message.getFrom().contains(jid)
+                                && XmppUtil.isMessage(xml)) {
+                            List<BaseMessage> messageList = new ArrayList<>();
+                            if (messageListMap.containsKey(jid)) {
+                                messageList = messageListMap.get(jid);
+                            }
+                            BaseMessage baseMessage = new BaseMessage(message);
+                            messageList.add(baseMessage);
+                            messageListMap.put(jid, messageList);
+                            baseRoster.setLastMessage(message.getBody());
+
+                            messageStanzaListener.callback(baseMessage);
+                            break;
                         }
-                        messageList.add(new BaseMessage(message));
-                        messageListMap.put(jid, messageList);
-                        baseRoster.setLastMessage(message.getBody());
-                        break;
                     }
                 }
-                messageStanzaListener.callback(packet);
-            }
-        }, Message.class);
+            }, Message.class);
 
-        addAsyncStanzaListener(messagePackageType);
+            //Listener for delivery message
+            getDeliveryReceiptManager().addReceiptReceivedListener((fromJid, toJid, receiptId, receipt) -> {
+                String shortJid = XmppStringUtils.parseBareJid(fromJid);
+
+                if (messageListMap.containsKey(shortJid)) {
+                    List<BaseMessage> baseMessages = messageListMap.get(shortJid);
+                    for (BaseMessage baseMessage : baseMessages) {
+                        if (baseMessage.getMessage().getStanzaId().equals(receiptId)) {
+                            baseMessage.setDelivered(true);
+
+                            messageStanzaListener.callback(baseMessage);
+                            break;
+                        }
+                    }
+                }
+            });
+
+            addAsyncStanzaListener(messagePackageType);
+        }
     }
 
     @Override
     public void addAsyncStanzaListener(StanzaListener packetListener, StanzaFilter packetFilter) {
-        xmppConnector.getConnection().addAsyncStanzaListener(packetListener, packetFilter);
+        if (isConnected()) {
+            xmppConnector.getConnection().addAsyncStanzaListener(packetListener, packetFilter);
+        }
     }
 
     @Override
     public void addListStanzaListener(List<StanzaPackageType> packetListeners) {
-        for (StanzaPackageType listener : packetListeners) {
-            addAsyncStanzaListener(listener.getStanzaListener(), new StanzaTypeFilter(listener.getPacketType()));
+        if (isConnected()) {
+            for (StanzaPackageType listener : packetListeners) {
+                addAsyncStanzaListener(listener.getStanzaListener(), new StanzaTypeFilter(listener.getPacketType()));
+            }
         }
     }
 
     @Override
     public void setAutoAcceptSubscribe() {
-        StanzaPackageType autoAcceptSubscribe = new StanzaPackageType(packet -> {
-            if (packet instanceof Presence) {
-                Presence presence = (Presence) packet;
-                if (presence.getType() != null) {
-                    switch (presence.getType()) {
-                        case subscribe:
-                            acceptInviteRequest(presence.getFrom());
-                            break;
-                        case unsubscribe:
-                            acceptUnFriendRequest(presence.getFrom());
-                            break;
+        if (isConnected()) {
+            StanzaPackageType autoAcceptSubscribe = new StanzaPackageType(packet -> {
+                if (packet instanceof Presence) {
+                    Presence presence = (Presence) packet;
+                    if (presence.getType() != null) {
+                        switch (presence.getType()) {
+                            case subscribe:
+                                acceptInviteRequest(presence.getFrom());
+                                break;
+                            case unsubscribe:
+                                acceptUnFriendRequest(presence.getFrom());
+                                break;
 
+                        }
                     }
                 }
-            }
-        }, Stanza.class);
+            }, Stanza.class);
 
-        addAsyncStanzaListener(autoAcceptSubscribe.getStanzaListener(),
-                new StanzaTypeFilter(autoAcceptSubscribe.getPacketType()));
+            addAsyncStanzaListener(autoAcceptSubscribe.getStanzaListener(),
+                    new StanzaTypeFilter(autoAcceptSubscribe.getPacketType()));
+        }
     }
 
     @Override
     public Chat openChatSession(StanzaListener listener, String toJid) {
-        addAsyncStanzaListener(listener,
-                new AndFilter(new StanzaTypeFilter(Message.class),
-                        new FromMatchesFilter(toJid, true)));
+        if (isConnected()) {
+            addAsyncStanzaListener(listener,
+                    new AndFilter(new StanzaTypeFilter(Message.class),
+                            new FromMatchesFilter(toJid, true)));
 
-        if (xmppConnector.getConnection().isConnected()) {
             return ChatManager.getInstanceFor(xmppConnector.getConnection()).createChat(toJid);
         } else {
             return null;
@@ -259,16 +327,30 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
-    public OfflineMessageManager getOfflineMessageManager() {
-        if (offlineMessageManager == null) {
-            offlineMessageManager = new OfflineMessageManager(xmppConnector.getConnection());
+    public DeliveryReceiptManager getDeliveryReceiptManager() {
+        if (isConnected()) {
+            return DeliveryReceiptManager.getInstanceFor(xmppConnector.getConnection());
         }
-        return offlineMessageManager;
+        return null;
+    }
+
+    @Override
+    public OfflineMessageManager getOfflineMessageManager() {
+        if (isConnected()) {
+            if (offlineMessageManager == null) {
+                offlineMessageManager = new OfflineMessageManager(xmppConnector.getConnection());
+            }
+            return offlineMessageManager;
+        }
+        return null;
     }
 
     @Override
     public ChatStateManager getChatStateManager() {
-        return ChatStateManager.getInstance(xmppConnector.getConnection());
+        if (isConnected()) {
+            return ChatStateManager.getInstance(xmppConnector.getConnection());
+        }
+        return null;
     }
 
     @Override
@@ -296,103 +378,159 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
-    public Roster setupRosterList(@NonNull XmppListener.IXmppUpdateCallback updateListener) {
+    public Roster setupRosterList(@NonNull XmppListener.IXmppCallback<BaseRoster> updateListener) {
         return setupRosterList(null, updateListener);
     }
 
     @Override
-    public Roster setupRosterList(RosterListener rosterListener, XmppListener.IXmppUpdateCallback updateListener) {
-        Roster roster = Roster.getInstanceFor(xmppConnector.getConnection());
-        Collection<RosterEntry> entries = roster.getEntries();
-        Presence presence;
+    public Roster setupRosterList(RosterListener rosterListener, XmppListener.IXmppCallback<BaseRoster> updateListener) {
+        if (isConnected()) {
+            Roster roster = Roster.getInstanceFor(xmppConnector.getConnection());
+            Collection<RosterEntry> entries = roster.getEntries();
+            Presence presence;
 
-        for (RosterEntry entry : entries) {
-            presence = roster.getPresence(entry.getUser());
-            String jid = XmppStringUtils.parseBareJid(entry.getUser());
-            userListMap.put(jid, new BaseRoster(entry.getUser(), presence));
-        }
-        roster.setSubscriptionMode(Roster.SubscriptionMode.manual);
-        if (baseRosterListener == null) {
-            baseRosterListener = new RosterListener() {
-                @Override
-                public void entriesAdded(Collection<String> addresses) {
-                    for (String item : addresses) {
-                        Presence presence = roster.getPresence(item);
-                        String jid = XmppStringUtils.parseBareJid(item);
-                        userListMap.put(jid, new BaseRoster(item, presence));
+            for (RosterEntry entry : entries) {
+                presence = roster.getPresence(entry.getUser());
+                String jid = XmppStringUtils.parseBareJid(entry.getUser());
+                userListMap.put(jid, new BaseRoster(entry.getUser(), presence));
+            }
+            roster.setSubscriptionMode(Roster.SubscriptionMode.manual);
+            if (baseRosterListener == null) {
+                baseRosterListener = new RosterListener() {
+                    @Override
+                    public void entriesAdded(Collection<String> addresses) {
+                        for (String item : addresses) {
+                            Presence presence = roster.getPresence(item);
+                            String jid = XmppStringUtils.parseBareJid(item);
+                            BaseRoster baseRoster = new BaseRoster(item, presence);
+                            userListMap.put(jid, baseRoster);
+                            if (updateListener != null) updateListener.callback(baseRoster);
+
+                        }
+                        if (rosterListener != null)
+                            rosterListener.entriesAdded(addresses);
                     }
-                    if (rosterListener != null)
-                        rosterListener.entriesAdded(addresses);
-                    if (updateListener != null) updateListener.update();
-                }
 
-                @Override
-                public void entriesUpdated(Collection<String> addresses) {
-                    for (String item : addresses) {
+                    @Override
+                    public void entriesUpdated(Collection<String> addresses) {
+                        for (String item : addresses) {
+                            for (BaseRoster baseRoster : userListMap.values()) {
+                                String jid = XmppStringUtils.parseBareJid(baseRoster.getName());
+                                if (item.contains(jid)) {
+                                    Presence presence = roster.getPresence(item);
+                                    baseRoster.setPresence(presence);
+                                    if (updateListener != null) updateListener.callback(baseRoster);
+                                    break;
+                                }
+                            }
+                        }
+                        if (rosterListener != null)
+                            rosterListener.entriesUpdated(addresses);
+                    }
+
+                    @Override
+                    public void entriesDeleted(Collection<String> addresses) {
+                        for (String item : addresses) {
+                            for (BaseRoster baseRoster : userListMap.values()) {
+                                String jid = XmppStringUtils.parseBareJid(baseRoster.getName());
+                                if (item.contains(jid)) {
+                                    userListMap.values().remove(baseRoster);
+                                    if (updateListener != null) updateListener.callback(baseRoster);
+                                    break;
+                                }
+                            }
+                        }
+                        if (rosterListener != null)
+                            rosterListener.entriesDeleted(addresses);
+                    }
+
+                    @Override
+                    public void presenceChanged(Presence presence) {
                         for (BaseRoster baseRoster : userListMap.values()) {
                             String jid = XmppStringUtils.parseBareJid(baseRoster.getName());
-                            if (item.contains(jid)) {
-                                Presence presence = roster.getPresence(item);
+                            if (presence.getFrom().contains(jid)) {
                                 baseRoster.setPresence(presence);
+                                if (updateListener != null) updateListener.callback(baseRoster);
                                 break;
                             }
                         }
+                        if (rosterListener != null)
+                            rosterListener.presenceChanged(presence);
                     }
-                    if (rosterListener != null)
-                        rosterListener.entriesUpdated(addresses);
-                    if (updateListener != null) updateListener.update();
-                }
+                };
+            } else {
+                roster.removeRosterListener(baseRosterListener);
+            }
+            roster.addRosterListener(baseRosterListener);
 
-                @Override
-                public void entriesDeleted(Collection<String> addresses) {
-                    for (String item : addresses) {
-                        for (BaseRoster baseRoster : userListMap.values()) {
-                            String jid = XmppStringUtils.parseBareJid(baseRoster.getName());
-                            if (item.contains(jid)) {
-                                userListMap.values().remove(baseRoster);
-                                break;
-                            }
-                        }
-                    }
-                    if (rosterListener != null)
-                        rosterListener.entriesDeleted(addresses);
-                    if (updateListener != null) updateListener.update();
-                }
+            if (updateListener != null) updateListener.callback(null);
 
-                @Override
-                public void presenceChanged(Presence presence) {
-                    for (BaseRoster baseRoster : userListMap.values()) {
-                        String jid = XmppStringUtils.parseBareJid(baseRoster.getName());
-                        if (presence.getFrom().contains(jid)) {
-                            baseRoster.setPresence(presence);
-                            break;
-                        }
-                    }
-                    if (rosterListener != null)
-                        rosterListener.presenceChanged(presence);
-                    if (updateListener != null) updateListener.update();
-                }
-            };
-        } else {
-            roster.removeRosterListener(baseRosterListener);
+            return roster;
         }
-        roster.addRosterListener(baseRosterListener);
-
-        return roster;
+        return null;
     }
 
     @Override
     public String getCurrentUser() {
-        return xmppConnector.getConnection().getUser();
+        if (isConnected()) {
+            return xmppConnector.getConnection().getUser();
+        }
+        return null;
     }
 
     @Override
-    public void updatePresence(Presence.Mode presenceMode, String status)
-            throws SmackException.NotConnectedException {
-        Presence p = new Presence(Presence.Type.available, status, 42, presenceMode);
-        sendStanza(p);
+    public void updatePresence(Presence.Mode presenceMode, String status) {
+        if (isConnected()) {
+            Presence p = new Presence(Presence.Type.available, status, 42, presenceMode);
+            sendStanza(p);
+        }
     }
 
+    @Override
+    public MultiUserChat createGroupChat(String groupName, String description, String roomId, String ownerJid)
+            throws XMPPException.XMPPErrorException, SmackException {
+        if (isConnected()) {
+            String roomFullId = roomId + "@conference." + XmppStringUtils.parseDomain(ownerJid);
+            String nick = XmppStringUtils.parseLocalpart(ownerJid);
+
+            MultiUserChatManager manager = MultiUserChatManager.getInstanceFor(xmppConnector.getConnection());
+
+            MultiUserChat chatRoom = manager.getMultiUserChat(roomFullId);
+            chatRoom.create(nick);
+
+            Form cfgForm = chatRoom.getConfigurationForm();
+            Form form = chatRoom.getConfigurationForm().createAnswerForm();
+            for (FormField field : cfgForm.getFields()) {
+                if (!FormField.Type.hidden.name().equals(field.getType().name())
+                        && field.getVariable() != null) {
+                    form.setDefaultAnswer(field.getVariable());
+                }
+            }
+            form.setAnswer(FormField.FORM_TYPE, "http://jabber.org/protocol/muc#roomconfig");
+            form.setAnswer("muc#roomconfig_roomdesc", description);
+            form.setAnswer("muc#roomconfig_roomname", groupName);
+            form.setAnswer("muc#roomconfig_publicroom", true);
+            form.setAnswer("muc#roomconfig_changesubject", true);
+            form.setAnswer("muc#roomconfig_persistentroom", true);
+
+            List<String> maxusers = new ArrayList<>();
+            maxusers.add("100");
+            form.setAnswer("muc#roomconfig_maxusers", maxusers);
+
+            List<String> cast_values = new ArrayList<>();
+            cast_values.add("moderator");
+            cast_values.add("participant");
+            cast_values.add("visitor");
+            form.setAnswer("muc#roomconfig_presencebroadcast", cast_values);
+
+            chatRoom.sendConfigurationForm(form);
+            chatRoom.join(nick);
+            MultiUserChatManager.getInstanceFor(xmppConnector.getConnection())
+                    .addInvitationListener(new GroupChatListener());
+            return chatRoom;
+        }
+        return null;
+    }
 
     //Other implement
     public void searchUser(String user) {
@@ -417,57 +555,16 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     public void setupIncomingChat(XmppListener.IXmppCallback<Chat> chatObjectCallBack) {
-        if (xmppConnector.getConnection().isConnected()) {
-            ChatManager chatManager = ChatManager.getInstanceFor(xmppConnector.getConnection());
-            chatManager.addChatListener((chat, createdLocally) -> {
-                if (!createdLocally) {
-                    chatObjectCallBack.callback(chat);
-                }
-            });
-        }
-    }
-
-    public MultiUserChat createGroupChat(String groupName, String description, String roomId, String ownerJid)
-            throws XMPPException.XMPPErrorException, SmackException {
-
-        String roomFullId = roomId + "@conference." + XmppStringUtils.parseDomain(ownerJid);
-        String nick = XmppStringUtils.parseLocalpart(ownerJid);
-
-        MultiUserChatManager manager = MultiUserChatManager.getInstanceFor(xmppConnector.getConnection());
-
-        MultiUserChat chatRoom = manager.getMultiUserChat(roomFullId);
-        chatRoom.create(nick);
-
-        Form cfgForm = chatRoom.getConfigurationForm();
-        Form form = chatRoom.getConfigurationForm().createAnswerForm();
-        for (FormField field : cfgForm.getFields()) {
-            if (!FormField.Type.hidden.name().equals(field.getType().name())
-                    && field.getVariable() != null) {
-                form.setDefaultAnswer(field.getVariable());
+        if (isConnected()) {
+            if (xmppConnector.getConnection().isConnected()) {
+                ChatManager chatManager = ChatManager.getInstanceFor(xmppConnector.getConnection());
+                chatManager.addChatListener((chat, createdLocally) -> {
+                    if (!createdLocally) {
+                        chatObjectCallBack.callback(chat);
+                    }
+                });
             }
         }
-        form.setAnswer(FormField.FORM_TYPE, "http://jabber.org/protocol/muc#roomconfig");
-        form.setAnswer("muc#roomconfig_roomdesc", description);
-        form.setAnswer("muc#roomconfig_roomname", groupName);
-        form.setAnswer("muc#roomconfig_publicroom", true);
-        form.setAnswer("muc#roomconfig_changesubject", true);
-        form.setAnswer("muc#roomconfig_persistentroom", true);
-
-        List<String> maxusers = new ArrayList<>();
-        maxusers.add("100");
-        form.setAnswer("muc#roomconfig_maxusers", maxusers);
-
-        List<String> cast_values = new ArrayList<>();
-        cast_values.add("moderator");
-        cast_values.add("participant");
-        cast_values.add("visitor");
-        form.setAnswer("muc#roomconfig_presencebroadcast", cast_values);
-
-        chatRoom.sendConfigurationForm(form);
-        chatRoom.join(nick);
-        MultiUserChatManager.getInstanceFor(xmppConnector.getConnection())
-                .addInvitationListener(new GroupChatListener());
-        return chatRoom;
     }
 
     public class GroupChatListener implements InvitationListener {

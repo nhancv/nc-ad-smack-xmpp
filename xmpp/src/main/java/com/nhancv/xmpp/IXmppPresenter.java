@@ -6,6 +6,7 @@ import com.nhancv.xmpp.listener.XmppListener;
 import com.nhancv.xmpp.model.BaseMessage;
 import com.nhancv.xmpp.model.BaseRoster;
 
+import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.XMPPException;
@@ -18,6 +19,7 @@ import org.jivesoftware.smack.roster.RosterListener;
 import org.jivesoftware.smackx.chatstates.ChatStateManager;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.offline.OfflineMessageManager;
+import org.jivesoftware.smackx.receipts.DeliveryReceiptManager;
 
 import java.io.IOException;
 import java.util.List;
@@ -37,22 +39,26 @@ public interface IXmppPresenter {
     void createUser(String userJid, String password, XmppListener.IXmppCreateListener createConnectionListener)
             throws XMPPException, IOException, SmackException;
 
-    void logout() throws SmackException.NotConnectedException;
+    void logout();
+
+    void connectionListenerRegister(ConnectionListener connectionListener);
+
+    boolean isConnected();
 
     String getCurrentUser();
 
     //Invite/request
-    void updatePresence(Presence.Mode presenceMode, String status) throws SmackException.NotConnectedException;
+    void updatePresence(Presence.Mode presenceMode, String status);
 
-    void sendStanza(@NonNull Stanza packet) throws SmackException.NotConnectedException;
+    void sendStanza(@NonNull Stanza packet);
 
-    void sendInviteRequest(String userJid) throws SmackException.NotConnectedException;
+    void sendInviteRequest(String userJid);
 
-    void acceptInviteRequest(String userJid) throws SmackException.NotConnectedException;
+    void acceptInviteRequest(String userJid);
 
-    void sendUnFriendRequest(String userJid) throws SmackException.NotConnectedException;
+    void sendUnFriendRequest(String userJid);
 
-    void acceptUnFriendRequest(String userJid) throws SmackException.NotConnectedException;
+    void acceptUnFriendRequest(String userJid);
 
     //Listener
     void removeAsyncStanzaListener(StanzaListener listener);
@@ -61,7 +67,7 @@ public interface IXmppPresenter {
 
     void addAsyncStanzaListener(StanzaPackageType packetListener);
 
-    void addMessageStanzaListener(XmppListener.IXmppCallback<Stanza> messageStanzaListener);
+    void addMessageStanzaListener(XmppListener.IXmppCallback<BaseMessage> messageStanzaListener);
 
     void addAsyncStanzaListener(StanzaListener packetListener, StanzaFilter packetFilter);
 
@@ -77,6 +83,8 @@ public interface IXmppPresenter {
 
     void closeChatSession(StanzaListener listener);
 
+    DeliveryReceiptManager getDeliveryReceiptManager();
+
     OfflineMessageManager getOfflineMessageManager();
 
     ChatStateManager getChatStateManager();
@@ -86,13 +94,12 @@ public interface IXmppPresenter {
     //User list
     Roster setupRosterList(@NonNull RosterListener rosterListener);
 
-    Roster setupRosterList(@NonNull XmppListener.IXmppUpdateCallback updateListener);
+    Roster setupRosterList(@NonNull XmppListener.IXmppCallback<BaseRoster> updateListener);
 
-    Roster setupRosterList(RosterListener rosterListener, XmppListener.IXmppUpdateCallback updateListener);
+    Roster setupRosterList(RosterListener rosterListener, XmppListener.IXmppCallback<BaseRoster> updateListener);
 
     List<BaseRoster> getCurrentRosterList();
 
     BaseRoster getRoster(String rosterJid);
-
 
 }
