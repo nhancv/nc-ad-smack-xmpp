@@ -1,20 +1,29 @@
 package com.nhancv.hellosmack.ui.adapter;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.graphics.Color;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.TextView;
 
 import com.nhancv.hellosmack.R;
+import com.nhancv.xmpp.XmppPresenter;
 import com.nhancv.xmpp.model.BaseMessage;
+
+import org.jxmpp.util.XmppStringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+
+import static org.jxmpp.util.XmppStringUtils.parseBareJid;
 
 /**
  * Created by Nhan Cao on 06-Sep-16.
@@ -25,16 +34,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ListsHolder> {
 
     public ChatAdapter() {
         this.listsItems = new ArrayList<>();
-    }
-
-    /**
-     * Add message
-     *
-     * @param message
-     */
-    public void addMessage(BaseMessage message) {
-        listsItems.add(message);
-        notifyItemInserted(listsItems.size());
     }
 
     public void setListsItems(List<BaseMessage> listsItems) {
@@ -52,12 +51,36 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ListsHolder> {
 
     @Override
     public void onBindViewHolder(ChatAdapter.ListsHolder holder, int position) {
+        Animation anim_left = AnimationUtils.loadAnimation(holder.itemView.getContext(), R.anim.msg_left);
+        Animation anim_right = AnimationUtils.loadAnimation(holder.itemView.getContext(), R.anim.msg_right);
+
         BaseMessage baseMessage = listsItems.get(position);
+        String to = baseMessage.getMessage().getTo();
+        boolean isLeft = XmppStringUtils.parseBareJid(to).contains(
+                parseBareJid(XmppPresenter.getInstance().getCurrentUser()));
+
         holder.tvTo.setText(baseMessage.getMessage().getTo());
         holder.tvMsg.setText(baseMessage.getMessage().getBody());
+        if (position == getItemCount() - 1) {
+            holder.itemView.setAnimation(isLeft ? anim_left : anim_right);
+            holder.itemView.animate().setListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationStart(Animator animation) {
+                    holder.itemView.setAlpha(0f);
+                }
+
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    holder.itemView.setAlpha(1f);
+                }
+            }).start();
+        }
+
         if (baseMessage.isRead()) {
+            holder.vItem.setBackgroundResource(isLeft ? R.drawable.chat_left_read : R.drawable.chat_right_read);
             holder.tvTo.setTextColor(Color.BLACK);
         } else {
+            holder.vItem.setBackgroundResource(isLeft ? R.drawable.chat_left_unread : R.drawable.chat_right_unread);
             holder.tvTo.setTextColor(Color.BLUE);
         }
 

@@ -5,8 +5,8 @@ import android.widget.Button;
 
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.helper.NUtil;
-import com.nhancv.xmpp.model.BaseRoster;
 import com.nhancv.xmpp.XmppPresenter;
+import com.nhancv.xmpp.model.BaseRoster;
 
 import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.Click;
@@ -35,7 +35,11 @@ public class GroupFragment extends Fragment {
     public void btChatRoomOnClick() {
         NUtil.aSyncTask(subscriber -> {
             try {
-                chatRoom = XmppPresenter.getInstance().createGroupChat(XmppPresenter.getInstance().getCurrentUser());
+                chatRoom = XmppPresenter.getInstance().createGroupChat(
+                        "Test group chat",
+                        "Test group description",
+                        "room001",
+                        XmppPresenter.getInstance().getCurrentUser());
                 for (BaseRoster user : XmppPresenter.getInstance().getCurrentRosterList()) {
                     chatRoom.invite(user.getName(), "hi you");
                 }

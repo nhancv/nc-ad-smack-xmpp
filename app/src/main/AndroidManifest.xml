@@ -16,8 +16,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".ui.activity.LoginActivity_"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
+            android:name=".ui.activity.LoginActivity_">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

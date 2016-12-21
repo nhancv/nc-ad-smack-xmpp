@@ -1,16 +1,22 @@
 package com.nhancv.hellosmack.ui.activity;
 
+import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
+import android.view.View;
+import android.view.WindowManager;
 import android.widget.CheckBox;
 import android.widget.EditText;
 
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.helper.NUtil;
 import com.nhancv.npreferences.NPreferences;
-import com.nhancv.xmpp.listener.XmppListener;
 import com.nhancv.xmpp.XmppPresenter;
+import com.nhancv.xmpp.listener.XmppListener;
 
 import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.Click;
@@ -29,6 +35,13 @@ import java.io.IOException;
 public class LoginActivity extends AppCompatActivity {
 
     private static final String TAG = LoginActivity.class.getSimpleName();
+
+    @ViewById(R.id.vToolbar)
+    Toolbar vToolbar;
+    @ViewById(R.id.inputLayoutUser)
+    TextInputLayout inputLayoutUser;
+    @ViewById(R.id.inputLayoutPassword)
+    TextInputLayout inputLayoutPassword;
     @ViewById(R.id.etUser)
     EditText etUser;
     @ViewById(R.id.etPwd)
@@ -38,23 +51,75 @@ public class LoginActivity extends AppCompatActivity {
 
     @AfterViews
     void initView() {
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null) {
-            actionBar.setTitle("Login");
-        }
+
+        setupToolbar(vToolbar, "Login");
         String userName = NPreferences.getInstance().getString("username", null);
         String passWord = NPreferences.getInstance().getString("password", null);
         if (userName != null && passWord != null) {
             login(userName, passWord);
         }
+
+        etUser.addTextChangedListener(new ValidateWatcher(etUser));
+        etPwd.addTextChangedListener(new ValidateWatcher(etPwd));
+
     }
 
-    @Click(R.id.btSignin)
-    void btSigninOnClick() {
+    private void submitForm() {
+        if (!validateUser()) {
+            return;
+        }
+
+        if (!validatePassword()) {
+            return;
+        }
+
         String userName = etUser.getText().toString();
         String passWord = etPwd.getText().toString();
 
         login(userName, passWord);
+    }
+
+    private boolean validateUser() {
+        if (etUser.getText().toString().trim().isEmpty()) {
+            inputLayoutUser.setError("Email is required!");
+            requestFocus(etUser);
+            return false;
+        } else {
+            inputLayoutUser.setErrorEnabled(false);
+        }
+
+        return true;
+    }
+
+    private boolean validatePassword() {
+        if (etPwd.getText().toString().trim().isEmpty()) {
+            inputLayoutPassword.setError("Password is required!");
+            requestFocus(etPwd);
+            return false;
+        } else {
+            inputLayoutPassword.setErrorEnabled(false);
+        }
+
+        return true;
+    }
+
+    private void requestFocus(View view) {
+        if (view.requestFocus()) {
+            getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+        }
+    }
+
+    private void setupToolbar(Toolbar toolbar, String title) {
+        setSupportActionBar(toolbar);
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setTitle(title);
+        }
+    }
+
+    @Click(R.id.btSignin)
+    void btSigninOnClick() {
+        submitForm();
     }
 
     private void login(String userName, String passWord) {
@@ -128,6 +193,32 @@ public class LoginActivity extends AppCompatActivity {
         NUtil.runOnUi(() -> {
             NUtil.showToast(this, msg);
         });
+    }
+
+    private class ValidateWatcher implements TextWatcher {
+
+        private View view;
+
+        private ValidateWatcher(View view) {
+            this.view = view;
+        }
+
+        public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+        }
+
+        public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+        }
+
+        public void afterTextChanged(Editable editable) {
+            switch (view.getId()) {
+                case R.id.etUser:
+                    validateUser();
+                    break;
+                case R.id.etPwd:
+                    validatePassword();
+                    break;
+            }
+        }
     }
 
 }

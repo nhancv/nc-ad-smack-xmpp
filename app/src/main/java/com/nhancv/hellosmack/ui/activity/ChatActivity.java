@@ -1,10 +1,12 @@
 package com.nhancv.hellosmack.ui.activity;
 
+import android.os.Bundle;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.text.Editable;
-import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -40,8 +42,9 @@ import java.util.List;
 public class ChatActivity extends AppCompatActivity {
 
     private static final String TAG = ChatActivity.class.getName();
-    @ViewById(R.id.tvTitle)
-    TextView tvTitle;
+    @ViewById(R.id.vToolbar)
+    Toolbar vToolbar;
+
     @ViewById(R.id.vListsItems)
     RecyclerView vListsItems;
     @ViewById(R.id.etInput)
@@ -51,11 +54,11 @@ public class ChatActivity extends AppCompatActivity {
 
     @Extra
     String address;
-    private List<BaseMessage> listBasemessage;
     private Chat chat;
     private ChatAdapter adapter;
     private StanzaListener chatSessionListener;
     private ChatStateManager chatStateManager;
+    private List<BaseMessage> listBaseMessage;
     private NTextChange editTextAutoChange = new NTextChange(new NTextChange.TextListener() {
         @Override
         public void after(Editable editable) {
@@ -76,9 +79,16 @@ public class ChatActivity extends AppCompatActivity {
         }
     });
 
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        overridePendingTransition(R.anim.trans_left_in, R.anim.trans_left_out);
+    }
+
     @AfterViews
     void initView() {
-        //Setup View
+        setupToolbar(vToolbar, "Chat activity");
+
         vListsItems = (RecyclerView) findViewById(R.id.vListsItems);
         adapter = new ChatAdapter();
         LinearLayoutManager llm = new LinearLayoutManager(this);
@@ -88,8 +98,8 @@ public class ChatActivity extends AppCompatActivity {
         vListsItems.setAdapter(adapter);
 
         chatStateManager = XmppPresenter.getInstance().getChatStateManager();
-        listBasemessage = XmppPresenter.getInstance().getMessageList(address);
-        adapter.setListsItems(listBasemessage);
+        listBaseMessage = XmppPresenter.getInstance().getMessageList(address);
+        adapter.setListsItems(listBaseMessage);
         chatSessionListener = packet -> {
             if (packet instanceof Message) {
                 Message message = (Message) packet;
@@ -118,7 +128,7 @@ public class ChatActivity extends AppCompatActivity {
         chat = XmppPresenter.getInstance().openChatSession(chatSessionListener, address);
 
         if (chat != null) {
-            tvTitle.setText(XmppStringUtils.parseBareJid(address));
+            setupToolbar(vToolbar, XmppStringUtils.parseBareJid(address));
         }
         etInput.addTextChangedListener(editTextAutoChange);
 
@@ -129,13 +139,23 @@ public class ChatActivity extends AppCompatActivity {
                     int top = llm.findFirstCompletelyVisibleItemPosition();
                     int bot = llm.findLastCompletelyVisibleItemPosition();
                     for (int i = top; i <= bot; i++) {
-                        listBasemessage.get(i).setRead(true);
+                        listBaseMessage.get(i).setRead(true);
                     }
                     adapter.notifyDataSetChanged();
                 }
             }
         });
+    }
 
+    private void setupToolbar(Toolbar toolbar, String title) {
+        setSupportActionBar(toolbar);
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setTitle(title);
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            toolbar.setNavigationIcon(R.drawable.ic_arrow_back_white);
+            toolbar.setNavigationOnClickListener(v -> onBackPressed());
+        }
     }
 
     @Click(R.id.btSend)
@@ -146,7 +166,7 @@ public class ChatActivity extends AppCompatActivity {
                 message.setBody(etInput.getText().toString());
                 chat.sendMessage(message);
 
-                listBasemessage.add(new BaseMessage(message, true));
+                listBaseMessage.add(new BaseMessage(message, true));
                 adapter.notifyDataSetChanged();
                 vListsItems.smoothScrollToPosition(adapter.getItemCount());
             }
@@ -155,7 +175,6 @@ public class ChatActivity extends AppCompatActivity {
         }
     }
 
-    @Click(R.id.btClose)
     public void btCloseOnClick() {
         if (chat != null) {
             chat.close();
@@ -165,6 +184,12 @@ public class ChatActivity extends AppCompatActivity {
             XmppPresenter.getInstance().closeChatSession(chatSessionListener);
         }
         finish();
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        overridePendingTransition(R.anim.trans_right_in, R.anim.trans_right_out);
     }
 
     @Override

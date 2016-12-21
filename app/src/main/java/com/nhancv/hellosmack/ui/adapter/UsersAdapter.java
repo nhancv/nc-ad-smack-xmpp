@@ -4,6 +4,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,8 +13,8 @@ import android.widget.TextView;
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.helper.NUtil;
 import com.nhancv.hellosmack.ui.activity.ChatActivity_;
-import com.nhancv.xmpp.model.BaseRoster;
 import com.nhancv.xmpp.XmppPresenter;
+import com.nhancv.xmpp.model.BaseRoster;
 
 import org.jivesoftware.smack.SmackException;
 
@@ -55,7 +56,7 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.ListsHolder>
     public void onBindViewHolder(UsersAdapter.ListsHolder holder, int position) {
         BaseRoster user = listsItems.get(position);
         holder.tvName.setText(user.getName());
-        holder.tvLastMsg.setText(user.getLastMessage());
+        holder.tvLastMsg.setText(TextUtils.isEmpty(user.getLastMessage()) ? "..." : user.getLastMessage());
         holder.vItem.setOnClickListener(v -> {
             ChatActivity_.intent(holder.itemView.getContext()).address(user.getName()).start();
         });

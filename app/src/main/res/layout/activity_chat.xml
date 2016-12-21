@@ -6,35 +6,14 @@
               android:layout_gravity="center"
               android:orientation="vertical">
 
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="50dp">
-
-        <TextView
-            android:id="@+id/tvTitle"
-            android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:layout_marginTop="10dp"
-            android:background="@android:color/darker_gray"
-            android:gravity="center"
-            android:padding="10dp"
-            android:text="chat"/>
-
-        <Button
-            android:id="@+id/btClose"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_gravity="right"
-            android:background="@drawable/view_circle_item"
-            android:gravity="center"
-            android:text="x"/>
-    </FrameLayout>
+    <include
+        android:id="@+id/vToolbar"
+        layout="@layout/view_toolbar"/>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:background="@android:color/holo_blue_bright"
         android:orientation="vertical">
 
         <android.support.v7.widget.RecyclerView
@@ -42,6 +21,7 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
+            android:background="@android:color/white"
             android:minHeight="300dp"/>
 
         <TextView
@@ -51,10 +31,16 @@
             android:text="typing...."
             android:visibility="gone"/>
 
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_gravity="center"
+            android:background="@android:color/darker_gray"/>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="45dp"
-            android:background="@android:color/darker_gray"
+            android:gravity="center"
             android:orientation="horizontal">
 
             <EditText
@@ -63,12 +49,15 @@
                 android:layout_height="match_parent"
                 android:layout_gravity="center"
                 android:layout_weight="1"
-                android:gravity="left"
+                android:background="@android:color/transparent"
+                android:hint="Input here"
                 android:maxLines="1"
+                android:padding="10dp"
                 android:singleLine="true"/>
 
             <Button
                 android:id="@+id/btSend"
+                style="@style/Widget.AppCompat.Button.Borderless.Colored"
                 android:layout_width="80dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"

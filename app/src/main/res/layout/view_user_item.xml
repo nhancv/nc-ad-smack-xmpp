@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/vItem"
-    style="@style/ListsItem"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
     android:layout_marginBottom="1dp"
+    android:background="@android:color/white"
     android:clickable="true"
     android:orientation="vertical"
     android:padding="5dp">
@@ -17,7 +20,7 @@
             android:layout_height="25dp"
             android:layout_gravity="center"
             android:layout_margin="5dp"
-            android:background="@drawable/view_circle_item" />
+            android:background="@drawable/view_circle_item"/>
 
         <TextView
             android:id="@+id/tvName"
@@ -26,8 +29,7 @@
             android:layout_gravity="center"
             android:layout_weight="1"
             android:text="admin@192.168.1.59"
-            android:textColor="@android:color/black"
-            android:textSize="22sp" />
+            android:textSize="18sp"/>
 
     </LinearLayout>
 
@@ -45,9 +47,10 @@
             android:layout_weight="1"
             android:ellipsize="end"
             android:maxLines="2"
-            android:text="hello "
-            android:textSize="18sp"
-            android:textStyle="italic" />
+            android:paddingLeft="25dp"
+            android:text="..."
+            android:textSize="15sp"
+            android:textStyle="italic"/>
 
     </LinearLayout>
 

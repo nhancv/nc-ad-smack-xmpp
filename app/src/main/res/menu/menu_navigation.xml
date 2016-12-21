@@ -3,7 +3,6 @@
     <group android:checkableBehavior="single">
         <item
             android:id="@+id/logout"
-            android:icon="@mipmap/ic_launcher"
             android:title="Logout" />
     </group>
 </menu>

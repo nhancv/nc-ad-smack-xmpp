@@ -7,6 +7,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -24,6 +25,7 @@ import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.EActivity;
 import org.androidannotations.annotations.ViewById;
 import org.jivesoftware.smack.SmackException;
+import org.jxmpp.util.XmppStringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,15 +44,25 @@ public class MainActivity extends AppCompatActivity {
     DrawerLayout vDrawer;
     @ViewById(R.id.vNavigation)
     NavigationView vNavigation;
+    @ViewById(R.id.tvName)
+    TextView tvName;
 
     ViewPagerAdapter adapter;
 
     @AfterViews
     void initView() {
-        setSupportActionBar(vToolbar);
+        setupToolbar(vToolbar, "Main activity");
         setupViewPager(vViewPager);
         vTabs.setupWithViewPager(vViewPager);
         initNavigationDrawer();
+    }
+
+    private void setupToolbar(Toolbar toolbar, String title) {
+        setSupportActionBar(toolbar);
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setTitle(title);
+        }
     }
 
     public void initNavigationDrawer() {
@@ -78,8 +90,8 @@ public class MainActivity extends AppCompatActivity {
             return true;
         });
         View header = vNavigation.getHeaderView(0);
-        TextView tvEmail = (TextView) header.findViewById(R.id.tvEmail);
-        tvEmail.setText(XmppPresenter.getInstance().getCurrentUser());
+        TextView tvName = (TextView) header.findViewById(R.id.tvName);
+        tvName.setText(XmppStringUtils.parseBareJid(XmppPresenter.getInstance().getCurrentUser()));
 
         ActionBarDrawerToggle actionBarDrawerToggle = new ActionBarDrawerToggle(this, vDrawer, vToolbar, R.string.drawer_open, R.string.drawer_close) {
             @Override
