@@ -16,6 +16,7 @@ import org.jivesoftware.smack.packet.Stanza;
 import org.jivesoftware.smack.roster.Roster;
 import org.jivesoftware.smack.roster.RosterListener;
 import org.jivesoftware.smackx.chatstates.ChatStateManager;
+import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.offline.OfflineMessageManager;
 
 import java.io.IOException;
@@ -69,6 +70,9 @@ public interface IXmppPresenter {
     void setAutoAcceptSubscribe();
 
     //Chat
+    MultiUserChat createGroupChat(String groupName, String description, String roomId, String ownerJid)
+            throws XMPPException.XMPPErrorException, SmackException;
+
     Chat openChatSession(StanzaListener listener, String toJid);
 
     void closeChatSession(StanzaListener listener);

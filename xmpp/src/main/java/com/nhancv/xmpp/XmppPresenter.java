@@ -35,6 +35,7 @@ import org.jivesoftware.smackx.offline.OfflineMessageManager;
 import org.jivesoftware.smackx.search.ReportedData;
 import org.jivesoftware.smackx.search.UserSearchManager;
 import org.jivesoftware.smackx.xdata.Form;
+import org.jivesoftware.smackx.xdata.FormField;
 import org.jxmpp.util.XmppStringUtils;
 
 import java.io.IOException;
@@ -426,16 +427,46 @@ public class XmppPresenter implements IXmppPresenter {
         }
     }
 
-    public MultiUserChat createGroupChat(String room, String ownerJid) throws XMPPException.XMPPErrorException, SmackException {
-        MultiUserChat chatRoom = MultiUserChatManager.getInstanceFor(xmppConnector.getConnection()).getMultiUserChat(ownerJid);
-        chatRoom.create("test");
+    public MultiUserChat createGroupChat(String groupName, String description, String roomId, String ownerJid)
+            throws XMPPException.XMPPErrorException, SmackException {
+
+        String roomFullId = roomId + "@conference." + XmppStringUtils.parseDomain(ownerJid);
+        String nick = XmppStringUtils.parseLocalpart(ownerJid);
+
+        MultiUserChatManager manager = MultiUserChatManager.getInstanceFor(xmppConnector.getConnection());
+
+        MultiUserChat chatRoom = manager.getMultiUserChat(roomFullId);
+        chatRoom.create(nick);
+
+        Form cfgForm = chatRoom.getConfigurationForm();
         Form form = chatRoom.getConfigurationForm().createAnswerForm();
+        for (FormField field : cfgForm.getFields()) {
+            if (!FormField.Type.hidden.name().equals(field.getType().name())
+                    && field.getVariable() != null) {
+                form.setDefaultAnswer(field.getVariable());
+            }
+        }
+        form.setAnswer(FormField.FORM_TYPE, "http://jabber.org/protocol/muc#roomconfig");
+        form.setAnswer("muc#roomconfig_roomdesc", description);
+        form.setAnswer("muc#roomconfig_roomname", groupName);
         form.setAnswer("muc#roomconfig_publicroom", true);
-        form.setAnswer("muc#roomconfig_roomname", "room786");
-        form.setAnswer("muc#roomconfig_roomowners", "owners");
+        form.setAnswer("muc#roomconfig_changesubject", true);
         form.setAnswer("muc#roomconfig_persistentroom", true);
+
+        List<String> maxusers = new ArrayList<>();
+        maxusers.add("100");
+        form.setAnswer("muc#roomconfig_maxusers", maxusers);
+
+        List<String> cast_values = new ArrayList<>();
+        cast_values.add("moderator");
+        cast_values.add("participant");
+        cast_values.add("visitor");
+        form.setAnswer("muc#roomconfig_presencebroadcast", cast_values);
+
         chatRoom.sendConfigurationForm(form);
-        MultiUserChatManager.getInstanceFor(xmppConnector.getConnection()).addInvitationListener(new GroupChatListener());
+        chatRoom.join(nick);
+        MultiUserChatManager.getInstanceFor(xmppConnector.getConnection())
+                .addInvitationListener(new GroupChatListener());
         return chatRoom;
     }
 

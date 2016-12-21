@@ -35,7 +35,7 @@ public class GroupFragment extends Fragment {
     public void btChatRoomOnClick() {
         NUtil.aSyncTask(subscriber -> {
             try {
-                chatRoom = XmppPresenter.getInstance().createGroupChat("Room test", XmppPresenter.getInstance().getCurrentUser());
+                chatRoom = XmppPresenter.getInstance().createGroupChat(XmppPresenter.getInstance().getCurrentUser());
                 for (BaseRoster user : XmppPresenter.getInstance().getCurrentRosterList()) {
                     chatRoom.invite(user.getName(), "hi you");
                 }
