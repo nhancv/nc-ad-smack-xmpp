@@ -16,6 +16,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.nhancv.hellosmack.R;
+import com.nhancv.hellosmack.bus.InvitationBus;
 import com.nhancv.hellosmack.bus.MessageBus;
 import com.nhancv.hellosmack.bus.RosterBus;
 import com.nhancv.hellosmack.bus.XmppConnBus;
@@ -69,6 +70,11 @@ public class MainActivity extends AppCompatActivity {
         setupViewPager(vViewPager);
         vTabs.setupWithViewPager(vViewPager);
         initNavigationDrawer();
+    }
+
+    @Subscribe
+    public void invitationSubscribe(InvitationBus invitationBus) {
+        Log.e(TAG, "invitationSubscribe: " + invitationBus.getData());
     }
 
     @Subscribe

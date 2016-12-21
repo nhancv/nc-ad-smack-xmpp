@@ -5,16 +5,21 @@ import android.app.NotificationManager;
 import android.content.Intent;
 
 import com.nhancv.hellosmack.bus.BaseBus;
+import com.nhancv.hellosmack.bus.InvitationBus;
 import com.nhancv.hellosmack.bus.MessageBus;
 import com.nhancv.hellosmack.bus.RosterBus;
 import com.nhancv.hellosmack.bus.XmppConnBus;
 import com.nhancv.xmpp.XmppPresenter;
 import com.nhancv.xmpp.listener.ErrorXmppConListener;
+import com.nhancv.xmpp.listener.GroupChatListener;
 
 import org.androidannotations.annotations.EService;
 import org.androidannotations.annotations.SystemService;
 import org.androidannotations.annotations.UiThread;
 import org.greenrobot.eventbus.EventBus;
+import org.jivesoftware.smack.XMPPConnection;
+import org.jivesoftware.smack.packet.Message;
+import org.jivesoftware.smackx.muc.MultiUserChat;
 
 /**
  * Created by nhancao on 12/21/16.
@@ -72,6 +77,15 @@ public class XmppService extends IntentService {
         XmppPresenter.getInstance().setupRosterList(baseRoster -> {
             postEvent(new RosterBus(XmppService.class, 0, baseRoster));
         });
+
+        XmppPresenter.getInstance().getMultiUserChatManager()
+                .addInvitationListener(new GroupChatListener() {
+                    @Override
+                    public void invitationReceived(XMPPConnection conn, MultiUserChat room, String inviter, String reason, String password, Message message) {
+                        super.invitationReceived(conn, room, inviter, reason, password, message);
+                        postEvent(new InvitationBus(XmppService.class, 0, new Invitation(conn, room, inviter, reason, password, message)));
+                    }
+                });
     }
 
     @UiThread

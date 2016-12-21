@@ -10,7 +10,6 @@ import com.nhancv.xmpp.model.BaseRoster;
 import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.StanzaListener;
-import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.chat.Chat;
 import org.jivesoftware.smack.chat.ChatManager;
@@ -29,7 +28,6 @@ import org.jivesoftware.smack.roster.RosterListener;
 import org.jivesoftware.smack.roster.packet.RosterPacket;
 import org.jivesoftware.smackx.chatstates.ChatStateManager;
 import org.jivesoftware.smackx.iqregister.AccountManager;
-import org.jivesoftware.smackx.muc.InvitationListener;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.muc.MultiUserChatManager;
 import org.jivesoftware.smackx.offline.OfflineMessageManager;
@@ -57,6 +55,7 @@ public class XmppPresenter implements IXmppPresenter {
     private static XmppPresenter instance = new XmppPresenter();
     private Map<String, BaseRoster> userListMap = new LinkedHashMap<>();
     private Map<String, List<BaseMessage>> messageListMap = new LinkedHashMap<>();
+
     private IXmppConnector xmppConnector;
     private RosterListener baseRosterListener;
     private OfflineMessageManager offlineMessageManager;
@@ -327,6 +326,14 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
+    public MultiUserChatManager getMultiUserChatManager() {
+        if (isConnected()) {
+            return MultiUserChatManager.getInstanceFor(xmppConnector.getConnection());
+        }
+        return null;
+    }
+
+    @Override
     public DeliveryReceiptManager getDeliveryReceiptManager() {
         if (isConnected()) {
             return DeliveryReceiptManager.getInstanceFor(xmppConnector.getConnection());
@@ -487,46 +494,54 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
-    public MultiUserChat createGroupChat(String groupName, String description, String roomId, String ownerJid)
+    public MultiUserChat createGroupChat(String groupName, String description, String roomId, String ownerJid, XmppListener.CreateGroupListener createGroupListener)
             throws XMPPException.XMPPErrorException, SmackException {
         if (isConnected()) {
-            String roomFullId = roomId + "@conference." + XmppStringUtils.parseDomain(ownerJid);
+            String serviceName = "conference." + XmppStringUtils.parseDomain(ownerJid);
+            String roomFullId = roomId + "@" + serviceName;
             String nick = XmppStringUtils.parseLocalpart(ownerJid);
 
-            MultiUserChatManager manager = MultiUserChatManager.getInstanceFor(xmppConnector.getConnection());
+            MultiUserChatManager manager = getMultiUserChatManager();
 
             MultiUserChat chatRoom = manager.getMultiUserChat(roomFullId);
-            chatRoom.create(nick);
+            if (chatRoom.isJoined()) {
+                createGroupListener.joined(chatRoom);
+            } else {
+                if (chatRoom.createOrJoin(nick)) {
+                    // We successfully created a new room
+                    Form cfgForm = chatRoom.getConfigurationForm();
+                    Form form = chatRoom.getConfigurationForm().createAnswerForm();
+                    for (FormField field : cfgForm.getFields()) {
+                        if (!FormField.Type.hidden.name().equals(field.getType().name())
+                                && field.getVariable() != null) {
+                            form.setDefaultAnswer(field.getVariable());
+                        }
+                    }
+                    form.setAnswer(FormField.FORM_TYPE, "http://jabber.org/protocol/muc#roomconfig");
+                    form.setAnswer("muc#roomconfig_roomdesc", description);
+                    form.setAnswer("muc#roomconfig_roomname", groupName);
+                    form.setAnswer("muc#roomconfig_publicroom", true);
+                    form.setAnswer("muc#roomconfig_changesubject", true);
+                    form.setAnswer("muc#roomconfig_persistentroom", true);
 
-            Form cfgForm = chatRoom.getConfigurationForm();
-            Form form = chatRoom.getConfigurationForm().createAnswerForm();
-            for (FormField field : cfgForm.getFields()) {
-                if (!FormField.Type.hidden.name().equals(field.getType().name())
-                        && field.getVariable() != null) {
-                    form.setDefaultAnswer(field.getVariable());
+                    List<String> maxUsers = new ArrayList<>();
+                    maxUsers.add("100");
+                    form.setAnswer("muc#roomconfig_maxusers", maxUsers);
+
+                    List<String> cast_values = new ArrayList<>();
+                    cast_values.add("moderator");
+                    cast_values.add("participant");
+                    cast_values.add("visitor");
+                    form.setAnswer("muc#roomconfig_presencebroadcast", cast_values);
+
+                    chatRoom.sendConfigurationForm(form);
+                    createGroupListener.created(chatRoom);
+                } else {
+                    // We need to leave the room since it seems that the room already existed
+                    chatRoom.leave();
+                    createGroupListener.exists(chatRoom);
                 }
             }
-            form.setAnswer(FormField.FORM_TYPE, "http://jabber.org/protocol/muc#roomconfig");
-            form.setAnswer("muc#roomconfig_roomdesc", description);
-            form.setAnswer("muc#roomconfig_roomname", groupName);
-            form.setAnswer("muc#roomconfig_publicroom", true);
-            form.setAnswer("muc#roomconfig_changesubject", true);
-            form.setAnswer("muc#roomconfig_persistentroom", true);
-
-            List<String> maxusers = new ArrayList<>();
-            maxusers.add("100");
-            form.setAnswer("muc#roomconfig_maxusers", maxusers);
-
-            List<String> cast_values = new ArrayList<>();
-            cast_values.add("moderator");
-            cast_values.add("participant");
-            cast_values.add("visitor");
-            form.setAnswer("muc#roomconfig_presencebroadcast", cast_values);
-
-            chatRoom.sendConfigurationForm(form);
-            chatRoom.join(nick);
-            MultiUserChatManager.getInstanceFor(xmppConnector.getConnection())
-                    .addInvitationListener(new GroupChatListener());
             return chatRoom;
         }
         return null;
@@ -567,16 +582,4 @@ public class XmppPresenter implements IXmppPresenter {
         }
     }
 
-    public class GroupChatListener implements InvitationListener {
-        @Override
-        public void invitationReceived(XMPPConnection conn, MultiUserChat room, String inviter, String reason, String password, Message message) {
-            Log.e(TAG, "invitationReceived: Entered invitation handler... " + message);
-            try {
-                room.join(inviter);
-                Log.e(TAG, "invitationReceived: accepted");
-            } catch (SmackException.NoResponseException | XMPPException.XMPPErrorException | SmackException.NotConnectedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
 }

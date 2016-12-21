@@ -18,6 +18,7 @@ import org.jivesoftware.smack.roster.Roster;
 import org.jivesoftware.smack.roster.RosterListener;
 import org.jivesoftware.smackx.chatstates.ChatStateManager;
 import org.jivesoftware.smackx.muc.MultiUserChat;
+import org.jivesoftware.smackx.muc.MultiUserChatManager;
 import org.jivesoftware.smackx.offline.OfflineMessageManager;
 import org.jivesoftware.smackx.receipts.DeliveryReceiptManager;
 
@@ -76,12 +77,14 @@ public interface IXmppPresenter {
     void setAutoAcceptSubscribe();
 
     //Chat
-    MultiUserChat createGroupChat(String groupName, String description, String roomId, String ownerJid)
+    MultiUserChat createGroupChat(String groupName, String description, String roomId, String ownerJid, XmppListener.CreateGroupListener createGroupListener)
             throws XMPPException.XMPPErrorException, SmackException;
 
     Chat openChatSession(StanzaListener listener, String toJid);
 
     void closeChatSession(StanzaListener listener);
+
+    MultiUserChatManager getMultiUserChatManager();
 
     DeliveryReceiptManager getDeliveryReceiptManager();
 

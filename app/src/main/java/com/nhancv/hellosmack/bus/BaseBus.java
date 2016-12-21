@@ -3,17 +3,17 @@ package com.nhancv.hellosmack.bus;
 /**
  * Created by Nhan Cao on 06-Sep-16.
  */
-public class BaseBus {
+public class BaseBus<D extends Object> {
     private Class clazz;
     private int code;
-    private Object data;
+    private D data;
 
     public BaseBus(Class clazz, int code) {
         this.clazz = clazz;
         this.code = code;
     }
 
-    public BaseBus(Class clazz, int code, Object data) {
+    public BaseBus(Class clazz, int code, D data) {
         this.clazz = clazz;
         this.code = code;
         this.data = data;
@@ -27,7 +27,7 @@ public class BaseBus {
         return code;
     }
 
-    public Object getData() {
+    public D getData() {
         return data;
     }
 }

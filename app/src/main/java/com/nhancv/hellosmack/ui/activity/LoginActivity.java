@@ -1,5 +1,6 @@
 package com.nhancv.hellosmack.ui.activity;
 
+import android.support.design.widget.TextInputEditText;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -10,7 +11,6 @@ import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.CheckBox;
-import android.widget.EditText;
 
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.helper.NUtil;
@@ -44,9 +44,9 @@ public class LoginActivity extends AppCompatActivity {
     @ViewById(R.id.inputLayoutPassword)
     TextInputLayout inputLayoutPassword;
     @ViewById(R.id.etUser)
-    EditText etUser;
+    TextInputEditText etUser;
     @ViewById(R.id.etPwd)
-    EditText etPwd;
+    TextInputEditText etPwd;
     @ViewById(R.id.checkBox)
     CheckBox checkBox;
 

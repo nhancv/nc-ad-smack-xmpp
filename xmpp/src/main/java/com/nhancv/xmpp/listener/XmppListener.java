@@ -1,6 +1,7 @@
 package com.nhancv.xmpp.listener;
 
 import org.jivesoftware.smack.SmackException;
+import org.jivesoftware.smackx.muc.MultiUserChat;
 
 /**
  * Created by nhancao on 12/13/16.
@@ -31,8 +32,12 @@ public class XmppListener {
         void callback(T item);
     }
 
-    public interface IXmppUpdateCallback {
-        void update();
+    public interface CreateGroupListener {
+        void joined(MultiUserChat chatRoom);
+
+        void created(MultiUserChat chatRoom);
+
+        void exists(MultiUserChat chatRoom);
     }
 
 
