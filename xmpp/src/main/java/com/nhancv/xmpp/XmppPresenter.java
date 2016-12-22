@@ -603,10 +603,38 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
-    public BaseError joinRoom(MultiUserChat muc, String nickName) {
+    public BaseError joinRoom(MultiUserChat muc, XmppListener.ParticipantListener participantListener, String nickName) {
         if (muc != null && isConnected()) {
             try {
                 muc.join(nickName);
+                muc.addParticipantListener(presence -> {
+                    ParticipantPresence participant = XmppUtil.getParticipantPresence(presence);
+                    if (participant != null) {
+                        refreshRoomListMap();
+                        Log.d(TAG, "new participant accepted: " + participant.getJid());
+                        participantListener.processPresence(participant);
+                    }
+                });
+
+                muc.addParticipantStatusListener(new DefaultParticipantStatusListener() {
+                    @Override
+                    public void joined(String participant) {
+                        refreshRoomListMap();
+                        String roomId = XmppStringUtils.parseBareJid(participant);
+                        String userJid = XmppStringUtils.parseResource(participant);
+                        Log.d(TAG, "joined: roomId " + roomId + " userJid: " + userJid);
+                        participantListener.processPresence(new ParticipantPresence(userJid, ParticipantPresence.Role.PARTICIPANT));
+                    }
+
+                    @Override
+                    public void left(String participant) {
+                        refreshRoomListMap();
+                        String roomId = XmppStringUtils.parseBareJid(participant);
+                        String userJid = XmppStringUtils.parseResource(participant);
+                        Log.d(TAG, "left: roomId " + roomId + " userJid: " + userJid);
+                        participantListener.processPresence(new ParticipantPresence(userJid, ParticipantPresence.Role.NONE));
+                    }
+                });
                 refreshRoomListMap();
                 return new BaseError();
             } catch (SmackException.NoResponseException | XMPPException.XMPPErrorException | SmackException.NotConnectedException e) {

@@ -2,7 +2,6 @@ package com.nhancv.hellosmack.ui.fragment;
 
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
-import android.util.Log;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -24,8 +23,6 @@ import org.androidannotations.annotations.ViewById;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smackx.muc.MultiUserChat;
-import org.jivesoftware.smackx.muc.MultiUserChatManager;
-import org.jivesoftware.smackx.muc.Occupant;
 import org.jxmpp.util.XmppStringUtils;
 
 import java.util.UUID;
@@ -55,21 +52,6 @@ public class GroupFragment extends Fragment {
             }
         };
         vListsItems.setAdapter(adapter);
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-
-        MultiUserChatManager manager = XmppPresenter.getInstance().getMultiUserChatManager();
-        for (String s : manager.getJoinedRooms()) {
-            MultiUserChat muc = manager.getMultiUserChat(s);
-            for (String o : muc.getOccupants()) {
-                Occupant occupant = muc.getOccupant(o);
-                Log.e(TAG, "onResume:occupants " + occupant.getJid() + " " + occupant.getRole());
-            }
-        }
-
     }
 
     @ItemLongClick(R.id.vListsItems)

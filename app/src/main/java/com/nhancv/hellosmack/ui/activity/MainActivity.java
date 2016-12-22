@@ -14,6 +14,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.bus.InvitationBus;
@@ -78,11 +79,14 @@ public class MainActivity extends AppCompatActivity {
     public void invitationSubscribe(InvitationBus invitationBus) {
         Invitation invitation = invitationBus.getData();
         Log.d(TAG, "invitationSubscribe: Entered invitation handler... " + invitation.getMessage());
-        BaseError error = XmppPresenter.getInstance().joinRoom(invitation.getRoom(), invitation.getInviter());
+        BaseError error = XmppPresenter.getInstance().joinRoom(invitation.getRoom(), participantPresence -> {
+            groupFragment.updateAdapter();
+            showToast("processPresence: " + participantPresence.getJid() + " " + participantPresence.getRole());
+        }, XmppPresenter.getInstance().getCurrentUser());
         if (error.isError()) {
-            NUtil.showToast(this, "error: " + error.getMessage());
+            showToast("error: " + error.getMessage());
         } else {
-            NUtil.showToast(this, "invitationSubscribe: auto accepted");
+            showToast("invitationSubscribe: auto accepted");
             groupFragment.updateAdapter();
         }
     }
@@ -91,11 +95,11 @@ public class MainActivity extends AppCompatActivity {
     public void xmppConnSubscribe(XmppConnBus xmppConnBus) {
         switch (xmppConnBus.getType()) {
             case CLOSE_ERROR:
-                NUtil.showToast(this, ((Exception) xmppConnBus.getData()).getMessage());
+                showToast(((Exception) xmppConnBus.getData()).getMessage());
                 logout();
                 break;
             default:
-                NUtil.showToast(this, xmppConnBus.getType().name());
+                showToast(xmppConnBus.getType().name());
                 break;
 
         }
@@ -125,6 +129,7 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         XmppService.getBus().register(this);
         if (XmppPresenter.getInstance().isConnected()) {
+            groupFragment.updateAdapter();
             usersFragment.updateAdapter();
         } else {
             logout();
@@ -201,6 +206,14 @@ public class MainActivity extends AppCompatActivity {
         adapter.addFragment(groupFragment, "Group");
         viewPager.setAdapter(adapter);
     }
+
+
+    public void showToast(String msg) {
+        NUtil.runOnUi(() -> {
+            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+        });
+    }
+
 
     class ViewPagerAdapter extends FragmentPagerAdapter {
         private final List<Fragment> mFragmentList = new ArrayList<>();
