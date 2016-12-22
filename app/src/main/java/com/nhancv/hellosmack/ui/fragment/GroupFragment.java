@@ -80,7 +80,7 @@ public class GroupFragment extends Fragment {
         // Set up the buttons
         builder.setPositiveButton("OK", (dialog, which) -> {
             XmppPresenter.getInstance().leaveRoom(baseRoom.getMultiUserChat());
-            updateAdapterList();
+            updateAdapter();
         });
         builder.setNegativeButton("Cancel", (dialog, which) -> {
             dialog.cancel();
@@ -106,7 +106,7 @@ public class GroupFragment extends Fragment {
                             @Override
                             public void created(MultiUserChat chatRoom) {
                                 showToast("Successfully created a new room");
-                                updateAdapterList();
+                                updateAdapter();
 
                                 for (BaseRoster user : XmppPresenter.getInstance().getCurrentRosterList()) {
                                     try {
@@ -122,7 +122,7 @@ public class GroupFragment extends Fragment {
                                 showToast("The same room is already exists");
                             }
                         }, participantPresence -> {
-                            updateAdapterList();
+                            updateAdapter();
                             showToast("processPresence: " + participantPresence.getJid() + " " + participantPresence.getRole());
                         });
             } catch (XMPPException.XMPPErrorException | SmackException e) {
@@ -131,7 +131,7 @@ public class GroupFragment extends Fragment {
         });
     }
 
-    public void updateAdapterList() {
+    public void updateAdapter() {
         NUtil.runOnUi(() -> {
             if (adapter != null)
                 adapter.replaceAll(XmppPresenter.getInstance().getRoomList());

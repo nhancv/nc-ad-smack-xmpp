@@ -111,7 +111,7 @@ public class ChatActivity extends AppCompatActivity {
     public void messageSubscribe(MessageBus messageBus) {
         BaseMessage baseMessage = (BaseMessage) messageBus.getData();
         if (baseMessage != null) {
-            adapter.notifyDataSetChanged();
+            updateAdapter();
         }
     }
 
@@ -130,7 +130,7 @@ public class ChatActivity extends AppCompatActivity {
         super.onResume();
         XmppService.getBus().register(this);
         if (XmppPresenter.getInstance().isConnected()) {
-            adapter.notifyDataSetChanged();
+            updateAdapter();
         }
     }
 
@@ -163,7 +163,7 @@ public class ChatActivity extends AppCompatActivity {
                     String xml = message.toXML().toString();
                     if (XmppUtil.isMessage(xml)) {
                         NUtil.runOnUi(() -> {
-                            adapter.notifyDataSetChanged();
+                            updateAdapter();
                             vListsItems.smoothScrollToPosition(adapter.getItemCount());
                         });
                     } else {
@@ -196,10 +196,14 @@ public class ChatActivity extends AppCompatActivity {
                     for (int i = top; i <= bot; i++) {
                         listBaseMessage.get(i).setRead(true);
                     }
-                    adapter.notifyDataSetChanged();
+                    updateAdapter();
                 }
             }
         });
+    }
+
+    private void updateAdapter() {
+        adapter.notifyDataSetChanged();
     }
 
     private void setupToolbar(Toolbar toolbar, String title) {
@@ -222,7 +226,7 @@ public class ChatActivity extends AppCompatActivity {
                 DeliveryReceiptRequest.addTo(message);
                 chat.sendMessage(message);
                 listBaseMessage.add(new BaseMessage(message, true));
-                adapter.notifyDataSetChanged();
+                updateAdapter();
                 vListsItems.smoothScrollToPosition(adapter.getItemCount());
             }
         } catch (SmackException.NotConnectedException e) {

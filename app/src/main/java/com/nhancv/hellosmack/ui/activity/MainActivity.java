@@ -83,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
             NUtil.showToast(this, "error: " + error.getMessage());
         } else {
             NUtil.showToast(this, "invitationSubscribe: auto accepted");
-            groupFragment.updateAdapterList();
+            groupFragment.updateAdapter();
         }
     }
 
@@ -107,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
         if (baseMessage != null) {
             Log.d(TAG, "messageSubscribe: " + baseMessage);
         }
-        usersFragment.updateAdapterList();
+        usersFragment.updateAdapter();
     }
 
     @Subscribe
@@ -117,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
         if (status != null) {
             Log.d(TAG, "rosterSubscribe: " + status);
         }
-        usersFragment.updateAdapterList();
+        usersFragment.updateAdapter();
     }
 
     @Override
@@ -125,7 +125,7 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         XmppService.getBus().register(this);
         if (XmppPresenter.getInstance().isConnected()) {
-            usersFragment.updateAdapterList();
+            usersFragment.updateAdapter();
         } else {
             logout();
         }
