@@ -14,11 +14,11 @@ public abstract class ErrorXmppConListener implements ConnectionListener {
 
     @Override
     public void connected(XMPPConnection connection) {
-        Log.e(TAG, "connected");
+        Log.d(TAG, "connected");
     }
 
     @Override
     public void authenticated(XMPPConnection connection, boolean resumed) {
-        Log.e(TAG, "authenticated");
+        Log.d(TAG, "authenticated");
     }
 }

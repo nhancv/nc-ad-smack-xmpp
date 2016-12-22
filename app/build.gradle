@@ -43,6 +43,8 @@ dependencies {
     compile 'com.android.support:support-v4:23.4.0'
     compile 'com.android.support:appcompat-v7:23.4.0'
     compile 'com.android.support:recyclerview-v7:23.4.0'
+
+    compile 'com.joanzapata.android:base-adapter-helper:1.1.11'
     //Android annotations
     apt "org.androidannotations:androidannotations:4.0.0"
     compile 'org.androidannotations:androidannotations-api:4.0.0'

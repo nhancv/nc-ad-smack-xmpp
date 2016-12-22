@@ -4,8 +4,11 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.nhancv.xmpp.listener.XmppListener;
+import com.nhancv.xmpp.model.BaseError;
 import com.nhancv.xmpp.model.BaseMessage;
+import com.nhancv.xmpp.model.BaseRoom;
 import com.nhancv.xmpp.model.BaseRoster;
+import com.nhancv.xmpp.model.ParticipantPresence;
 
 import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.SmackException;
@@ -28,8 +31,10 @@ import org.jivesoftware.smack.roster.RosterListener;
 import org.jivesoftware.smack.roster.packet.RosterPacket;
 import org.jivesoftware.smackx.chatstates.ChatStateManager;
 import org.jivesoftware.smackx.iqregister.AccountManager;
+import org.jivesoftware.smackx.muc.DefaultParticipantStatusListener;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.muc.MultiUserChatManager;
+import org.jivesoftware.smackx.muc.Occupant;
 import org.jivesoftware.smackx.offline.OfflineMessageManager;
 import org.jivesoftware.smackx.receipts.DeliveryReceiptManager;
 import org.jivesoftware.smackx.search.ReportedData;
@@ -55,6 +60,7 @@ public class XmppPresenter implements IXmppPresenter {
     private static XmppPresenter instance = new XmppPresenter();
     private Map<String, BaseRoster> userListMap = new LinkedHashMap<>();
     private Map<String, List<BaseMessage>> messageListMap = new LinkedHashMap<>();
+    private Map<String, BaseRoom> roomListMap = new LinkedHashMap<>();
 
     private IXmppConnector xmppConnector;
     private RosterListener baseRosterListener;
@@ -370,6 +376,11 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
+    public List<BaseRoom> getRoomList() {
+        return new ArrayList<>(roomListMap.values());
+    }
+
+    @Override
     public List<BaseRoster> getCurrentRosterList() {
         return new ArrayList<>(userListMap.values());
     }
@@ -494,20 +505,21 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
-    public MultiUserChat createGroupChat(String groupName, String description, String roomId, String ownerJid, XmppListener.CreateGroupListener createGroupListener)
+    public MultiUserChat createGroupChat(String groupName, String description, String roomId, String ownerJid,
+                                         XmppListener.CreateGroupListener createGroupListener,
+                                         XmppListener.ParticipantListener participantListener)
             throws XMPPException.XMPPErrorException, SmackException {
         if (isConnected()) {
             String serviceName = "conference." + XmppStringUtils.parseDomain(ownerJid);
             String roomFullId = roomId + "@" + serviceName;
-            String nick = XmppStringUtils.parseLocalpart(ownerJid);
 
             MultiUserChatManager manager = getMultiUserChatManager();
-
             MultiUserChat chatRoom = manager.getMultiUserChat(roomFullId);
+
             if (chatRoom.isJoined()) {
                 createGroupListener.joined(chatRoom);
             } else {
-                if (chatRoom.createOrJoin(nick)) {
+                if (chatRoom.createOrJoin(ownerJid)) {
                     // We successfully created a new room
                     Form cfgForm = chatRoom.getConfigurationForm();
                     Form form = chatRoom.getConfigurationForm().createAnswerForm();
@@ -535,7 +547,37 @@ public class XmppPresenter implements IXmppPresenter {
                     form.setAnswer("muc#roomconfig_presencebroadcast", cast_values);
 
                     chatRoom.sendConfigurationForm(form);
+                    refreshRoomListMap();
+
                     createGroupListener.created(chatRoom);
+
+                    chatRoom.addParticipantListener(presence -> {
+                        ParticipantPresence participant = XmppUtil.getParticipantPresence(presence);
+                        if (participant != null) {
+                            refreshRoomListMap();
+                            Log.d(TAG, "new participant accepted: " + participant.getJid());
+                            participantListener.processPresence(participant);
+                        }
+                    });
+
+                    chatRoom.addParticipantStatusListener(new DefaultParticipantStatusListener() {
+                        @Override
+                        public void joined(String participant) {
+                            String roomId = XmppStringUtils.parseBareJid(participant);
+                            String userJid = XmppStringUtils.parseResource(participant);
+                            Log.d(TAG, "joined: roomId " + roomId + " userJid: " + userJid);
+                            participantListener.processPresence(new ParticipantPresence(userJid, ParticipantPresence.Role.PARTICIPANT));
+                        }
+
+                        @Override
+                        public void left(String participant) {
+                            String roomId = XmppStringUtils.parseBareJid(participant);
+                            String userJid = XmppStringUtils.parseResource(participant);
+                            Log.d(TAG, "left: roomId " + roomId + " userJid: " + userJid);
+                            participantListener.processPresence(new ParticipantPresence(userJid, ParticipantPresence.Role.NONE));
+                        }
+                    });
+
                 } else {
                     // We need to leave the room since it seems that the room already existed
                     chatRoom.leave();
@@ -545,6 +587,48 @@ public class XmppPresenter implements IXmppPresenter {
             return chatRoom;
         }
         return null;
+    }
+
+    @Override
+    public void leaveRoom(MultiUserChat muc) {
+        if (muc != null && isConnected()) {
+            try {
+                muc.leave();
+                refreshRoomListMap();
+            } catch (SmackException.NotConnectedException e) {
+                e.printStackTrace();
+            }
+
+        }
+    }
+
+    @Override
+    public BaseError joinRoom(MultiUserChat muc, String nickName) {
+        if (muc != null && isConnected()) {
+            try {
+                muc.join(nickName);
+                refreshRoomListMap();
+                return new BaseError();
+            } catch (SmackException.NoResponseException | XMPPException.XMPPErrorException | SmackException.NotConnectedException e) {
+                return new BaseError(true, e.getMessage(), e);
+            }
+        }
+        return new BaseError(true, "MultiUserChat is null");
+    }
+
+    @Override
+    public void refreshRoomListMap() {
+        MultiUserChatManager manager = XmppPresenter.getInstance().getMultiUserChatManager();
+        roomListMap.clear();
+        for (String roomId : manager.getJoinedRooms()) {
+            MultiUserChat muc = manager.getMultiUserChat(roomId);
+            List<Occupant> members = new ArrayList<>();
+            for (String o : muc.getOccupants()) {
+                Occupant occupant = muc.getOccupant(o);
+                members.add(occupant);
+            }
+            roomListMap.put(roomId, new BaseRoom(muc, members));
+        }
     }
 
     //Other implement

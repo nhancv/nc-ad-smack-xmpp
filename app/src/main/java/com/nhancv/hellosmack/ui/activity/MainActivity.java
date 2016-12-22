@@ -20,6 +20,7 @@ import com.nhancv.hellosmack.bus.InvitationBus;
 import com.nhancv.hellosmack.bus.MessageBus;
 import com.nhancv.hellosmack.bus.RosterBus;
 import com.nhancv.hellosmack.bus.XmppConnBus;
+import com.nhancv.hellosmack.helper.Invitation;
 import com.nhancv.hellosmack.helper.NUtil;
 import com.nhancv.hellosmack.helper.XmppService;
 import com.nhancv.hellosmack.helper.XmppService_;
@@ -29,6 +30,7 @@ import com.nhancv.hellosmack.ui.fragment.UsersFragment;
 import com.nhancv.hellosmack.ui.fragment.UsersFragment_;
 import com.nhancv.npreferences.NPreferences;
 import com.nhancv.xmpp.XmppPresenter;
+import com.nhancv.xmpp.model.BaseError;
 import com.nhancv.xmpp.model.BaseMessage;
 import com.nhancv.xmpp.model.BaseRoster;
 
@@ -74,12 +76,19 @@ public class MainActivity extends AppCompatActivity {
 
     @Subscribe
     public void invitationSubscribe(InvitationBus invitationBus) {
-        Log.e(TAG, "invitationSubscribe: " + invitationBus.getData());
+        Invitation invitation = invitationBus.getData();
+        Log.d(TAG, "invitationSubscribe: Entered invitation handler... " + invitation.getMessage());
+        BaseError error = XmppPresenter.getInstance().joinRoom(invitation.getRoom(), invitation.getInviter());
+        if (error.isError()) {
+            NUtil.showToast(this, "error: " + error.getMessage());
+        } else {
+            NUtil.showToast(this, "invitationSubscribe: auto accepted");
+            groupFragment.updateAdapterList();
+        }
     }
 
     @Subscribe
     public void xmppConnSubscribe(XmppConnBus xmppConnBus) {
-        Log.e(TAG, "xmppConnSubscribe: " + xmppConnBus.getType());
         switch (xmppConnBus.getType()) {
             case CLOSE_ERROR:
                 NUtil.showToast(this, ((Exception) xmppConnBus.getData()).getMessage());
@@ -96,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
     public void messageSubscribe(MessageBus messageBus) {
         BaseMessage baseMessage = (BaseMessage) messageBus.getData();
         if (baseMessage != null) {
-            Log.e(TAG, "messageSubscribe: " + baseMessage);
+            Log.d(TAG, "messageSubscribe: " + baseMessage);
         }
         usersFragment.updateAdapterList();
     }
@@ -106,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
         BaseRoster baseRoster = ((BaseRoster) rosterBus.getData());
         String status = (baseRoster != null ? baseRoster.getName() + " -> " + baseRoster.getPresence().getType() : null);
         if (status != null) {
-            Log.e(TAG, "rosterSubscribe: " + status);
+            Log.d(TAG, "rosterSubscribe: " + status);
         }
         usersFragment.updateAdapterList();
     }

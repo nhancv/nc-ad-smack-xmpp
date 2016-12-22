@@ -14,7 +14,7 @@ public abstract class AuthXmppConListener implements ConnectionListener {
 
     @Override
     public void connectionClosed() {
-        Log.e(TAG, "Connection Closed!");
+        Log.d(TAG, "Connection Closed!");
     }
 
     @Override
@@ -29,7 +29,7 @@ public abstract class AuthXmppConListener implements ConnectionListener {
 
     @Override
     public void reconnectionFailed(Exception arg0) {
-        Log.d(TAG, "Reconnection Failed!");
+        Log.e(TAG, "Reconnection Failed!");
     }
 
     @Override

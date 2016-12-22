@@ -1,5 +1,7 @@
 package com.nhancv.xmpp.listener;
 
+import com.nhancv.xmpp.model.ParticipantPresence;
+
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 
@@ -40,5 +42,8 @@ public class XmppListener {
         void exists(MultiUserChat chatRoom);
     }
 
+    public interface ParticipantListener {
+        void processPresence(ParticipantPresence participantPresence);
+    }
 
 }

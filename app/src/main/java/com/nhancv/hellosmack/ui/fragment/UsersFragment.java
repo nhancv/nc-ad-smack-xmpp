@@ -25,6 +25,7 @@ public class UsersFragment extends Fragment {
     private static final String TAG = UsersFragment.class.getName();
     @ViewById(R.id.vListsItems)
     RecyclerView vListsItems;
+
     UsersAdapter adapter;
     AlertDialog addContact;
 
@@ -49,7 +50,8 @@ public class UsersFragment extends Fragment {
 
     public void updateAdapterList() {
         NUtil.runOnUi(() -> {
-            adapter.setListsItems(XmppPresenter.getInstance().getCurrentRosterList());
+            if (adapter != null)
+                adapter.setListsItems(XmppPresenter.getInstance().getCurrentRosterList());
         });
     }
 

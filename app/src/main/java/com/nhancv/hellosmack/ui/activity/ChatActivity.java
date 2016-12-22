@@ -111,7 +111,6 @@ public class ChatActivity extends AppCompatActivity {
     public void messageSubscribe(MessageBus messageBus) {
         BaseMessage baseMessage = (BaseMessage) messageBus.getData();
         if (baseMessage != null) {
-            Log.e(TAG, "messageSubscribe: " + baseMessage);
             adapter.notifyDataSetChanged();
         }
     }
@@ -222,7 +221,6 @@ public class ChatActivity extends AppCompatActivity {
                 message.setBody(etInput.getText().toString());
                 DeliveryReceiptRequest.addTo(message);
                 chat.sendMessage(message);
-                Log.e(TAG, "btSendOnClick: " + message.getStanzaId());
                 listBaseMessage.add(new BaseMessage(message, true));
                 adapter.notifyDataSetChanged();
                 vListsItems.smoothScrollToPosition(adapter.getItemCount());

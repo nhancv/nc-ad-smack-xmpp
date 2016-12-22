@@ -3,7 +3,9 @@ package com.nhancv.xmpp;
 import android.support.annotation.NonNull;
 
 import com.nhancv.xmpp.listener.XmppListener;
+import com.nhancv.xmpp.model.BaseError;
 import com.nhancv.xmpp.model.BaseMessage;
+import com.nhancv.xmpp.model.BaseRoom;
 import com.nhancv.xmpp.model.BaseRoster;
 
 import org.jivesoftware.smack.ConnectionListener;
@@ -77,8 +79,14 @@ public interface IXmppPresenter {
     void setAutoAcceptSubscribe();
 
     //Chat
-    MultiUserChat createGroupChat(String groupName, String description, String roomId, String ownerJid, XmppListener.CreateGroupListener createGroupListener)
+    MultiUserChat createGroupChat(String groupName, String description, String roomId, String ownerJid,
+                                  XmppListener.CreateGroupListener createGroupListener,
+                                  XmppListener.ParticipantListener participantListener)
             throws XMPPException.XMPPErrorException, SmackException;
+
+    void leaveRoom(MultiUserChat muc);
+
+    BaseError joinRoom(MultiUserChat muc, String nickName);
 
     Chat openChatSession(StanzaListener listener, String toJid);
 
@@ -93,6 +101,10 @@ public interface IXmppPresenter {
     ChatStateManager getChatStateManager();
 
     List<BaseMessage> getMessageList(String jid);
+
+    List<BaseRoom> getRoomList();
+
+    void refreshRoomListMap();
 
     //User list
     Roster setupRosterList(@NonNull RosterListener rosterListener);

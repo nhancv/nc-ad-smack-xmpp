@@ -65,7 +65,7 @@ public class LoginActivity extends AppCompatActivity {
 
     }
 
-    private void submitForm() {
+    private void submitForm(boolean isLogin) {
         if (!validateUser()) {
             return;
         }
@@ -77,7 +77,39 @@ public class LoginActivity extends AppCompatActivity {
         String userName = etUser.getText().toString();
         String passWord = etPwd.getText().toString();
 
-        login(userName, passWord);
+        if (isLogin) {
+            login(userName, passWord);
+        } else {
+            signUp(userName, passWord);
+        }
+    }
+
+    private void signUp(String userName, String passWord) {
+        NUtil.aSyncTask(subscriber -> {
+            try {
+                XmppPresenter.getInstance().createUser(userName, passWord, new XmppListener.IXmppCreateListener() {
+                    @Override
+                    public void createSuccess() throws SmackException.NotConnectedException {
+                        Log.e(TAG, "createSuccess: ");
+                        XmppPresenter.getInstance().getXmppConnector().terminalConnection();
+                        NUtil.runOnUi(() -> {
+                            btSigninOnClick();
+                        });
+                    }
+
+                    @Override
+                    public void createError(Exception ex) {
+                        Log.e(TAG, "createError: " + ex);
+                        showToast(ex.getMessage());
+                    }
+                });
+            } catch (XMPPException | IOException | SmackException e) {
+                e.printStackTrace();
+                NUtil.runOnUi(() -> {
+                    showToast(e.getMessage());
+                });
+            }
+        });
     }
 
     private boolean validateUser() {
@@ -120,7 +152,7 @@ public class LoginActivity extends AppCompatActivity {
 
     @Click(R.id.btSignin)
     void btSigninOnClick() {
-        submitForm();
+        submitForm(true);
     }
 
     private void login(String userName, String passWord) {
@@ -161,34 +193,7 @@ public class LoginActivity extends AppCompatActivity {
 
     @Click(R.id.btSignup)
     void btSignupOnClick() {
-        String userName = etUser.getText().toString();
-        String passWord = etPwd.getText().toString();
-
-        NUtil.aSyncTask(subscriber -> {
-            try {
-                XmppPresenter.getInstance().createUser(userName, passWord, new XmppListener.IXmppCreateListener() {
-                    @Override
-                    public void createSuccess() throws SmackException.NotConnectedException {
-                        Log.e(TAG, "createSuccess: ");
-                        XmppPresenter.getInstance().getXmppConnector().terminalConnection();
-                        NUtil.runOnUi(() -> {
-                            btSigninOnClick();
-                        });
-                    }
-
-                    @Override
-                    public void createError(Exception ex) {
-                        Log.e(TAG, "createError: " + ex);
-                        showToast(ex.getMessage());
-                    }
-                });
-            } catch (XMPPException | IOException | SmackException e) {
-                e.printStackTrace();
-                NUtil.runOnUi(() -> {
-                    showToast(e.getMessage());
-                });
-            }
-        });
+        submitForm(false);
     }
 
     void showToast(String msg) {
