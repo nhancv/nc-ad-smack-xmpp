@@ -546,37 +546,14 @@ public class XmppPresenter implements IXmppPresenter {
                     cast_values.add("visitor");
                     form.setAnswer("muc#roomconfig_presencebroadcast", cast_values);
 
+                    // Sets the new owner of the room
+                    List<String> owners = new ArrayList<>();
+                    owners.add(XmppStringUtils.parseBareJid(ownerJid));
+                    form.setAnswer("muc#roomconfig_roomowners", owners);
+
                     chatRoom.sendConfigurationForm(form);
-                    refreshRoomListMap();
-
+                    mucListenerRegister(chatRoom, participantListener);
                     createGroupListener.created(chatRoom);
-
-                    chatRoom.addParticipantListener(presence -> {
-                        ParticipantPresence participant = XmppUtil.getParticipantPresence(presence);
-                        if (participant != null) {
-                            refreshRoomListMap();
-                            Log.d(TAG, "new participant accepted: " + participant.getJid());
-                            participantListener.processPresence(participant);
-                        }
-                    });
-
-                    chatRoom.addParticipantStatusListener(new DefaultParticipantStatusListener() {
-                        @Override
-                        public void joined(String participant) {
-                            String roomId = XmppStringUtils.parseBareJid(participant);
-                            String userJid = XmppStringUtils.parseResource(participant);
-                            Log.d(TAG, "joined: roomId " + roomId + " userJid: " + userJid);
-                            participantListener.processPresence(new ParticipantPresence(userJid, ParticipantPresence.Role.PARTICIPANT));
-                        }
-
-                        @Override
-                        public void left(String participant) {
-                            String roomId = XmppStringUtils.parseBareJid(participant);
-                            String userJid = XmppStringUtils.parseResource(participant);
-                            Log.d(TAG, "left: roomId " + roomId + " userJid: " + userJid);
-                            participantListener.processPresence(new ParticipantPresence(userJid, ParticipantPresence.Role.NONE));
-                        }
-                    });
 
                 } else {
                     // We need to leave the room since it seems that the room already existed
@@ -598,7 +575,6 @@ public class XmppPresenter implements IXmppPresenter {
             } catch (SmackException.NotConnectedException e) {
                 e.printStackTrace();
             }
-
         }
     }
 
@@ -607,41 +583,47 @@ public class XmppPresenter implements IXmppPresenter {
         if (muc != null && isConnected()) {
             try {
                 muc.join(nickName);
-                muc.addParticipantListener(presence -> {
-                    ParticipantPresence participant = XmppUtil.getParticipantPresence(presence);
-                    if (participant != null) {
-                        refreshRoomListMap();
-                        Log.d(TAG, "new participant accepted: " + participant.getJid());
-                        participantListener.processPresence(participant);
-                    }
-                });
 
-                muc.addParticipantStatusListener(new DefaultParticipantStatusListener() {
-                    @Override
-                    public void joined(String participant) {
-                        refreshRoomListMap();
-                        String roomId = XmppStringUtils.parseBareJid(participant);
-                        String userJid = XmppStringUtils.parseResource(participant);
-                        Log.d(TAG, "joined: roomId " + roomId + " userJid: " + userJid);
-                        participantListener.processPresence(new ParticipantPresence(userJid, ParticipantPresence.Role.PARTICIPANT));
-                    }
-
-                    @Override
-                    public void left(String participant) {
-                        refreshRoomListMap();
-                        String roomId = XmppStringUtils.parseBareJid(participant);
-                        String userJid = XmppStringUtils.parseResource(participant);
-                        Log.d(TAG, "left: roomId " + roomId + " userJid: " + userJid);
-                        participantListener.processPresence(new ParticipantPresence(userJid, ParticipantPresence.Role.NONE));
-                    }
-                });
-                refreshRoomListMap();
+                mucListenerRegister(muc, participantListener);
                 return new BaseError();
             } catch (SmackException.NoResponseException | XMPPException.XMPPErrorException | SmackException.NotConnectedException e) {
                 return new BaseError(true, e.getMessage(), e);
             }
         }
         return new BaseError(true, "MultiUserChat is null");
+    }
+
+    @Override
+    public void mucListenerRegister(MultiUserChat muc, final XmppListener.ParticipantListener participantListener) {
+        muc.addParticipantListener(presence -> {
+            ParticipantPresence participant = XmppUtil.getParticipantPresence(presence);
+            if (participant != null) {
+                refreshRoomListMap();
+                Log.d(TAG, "new participant accepted: " + participant.getJid());
+                participantListener.processPresence(participant);
+            }
+        });
+
+        muc.addParticipantStatusListener(new DefaultParticipantStatusListener() {
+            @Override
+            public void joined(String participant) {
+                refreshRoomListMap();
+                String roomId = XmppStringUtils.parseBareJid(participant);
+                String userJid = XmppStringUtils.parseResource(participant);
+                Log.d(TAG, "joined: roomId " + roomId + " userJid: " + userJid);
+                participantListener.processPresence(new ParticipantPresence(userJid, ParticipantPresence.Role.PARTICIPANT));
+            }
+
+            @Override
+            public void left(String participant) {
+                refreshRoomListMap();
+                String roomId = XmppStringUtils.parseBareJid(participant);
+                String userJid = XmppStringUtils.parseResource(participant);
+                Log.d(TAG, "left: roomId " + roomId + " userJid: " + userJid);
+                participantListener.processPresence(new ParticipantPresence(userJid, ParticipantPresence.Role.NONE));
+            }
+        });
+        refreshRoomListMap();
     }
 
     @Override

@@ -88,6 +88,8 @@ public interface IXmppPresenter {
 
     BaseError joinRoom(MultiUserChat muc, XmppListener.ParticipantListener participantListener, String nickName);
 
+    void mucListenerRegister(MultiUserChat muc, final XmppListener.ParticipantListener participantListener);
+
     Chat openChatSession(StanzaListener listener, String toJid);
 
     void closeChatSession(StanzaListener listener);
