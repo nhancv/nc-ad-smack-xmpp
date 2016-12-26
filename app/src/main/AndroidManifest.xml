@@ -26,6 +26,7 @@
 
         <activity android:name=".ui.activity.MainActivity_" />
         <activity android:name=".ui.activity.ChatActivity_"/>
+        <activity android:name=".ui.activity.ChatRoomActivity_"/>
 
         <service android:name=".helper.XmppService_"/>
     </application>

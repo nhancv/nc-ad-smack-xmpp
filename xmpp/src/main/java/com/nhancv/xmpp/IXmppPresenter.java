@@ -13,6 +13,7 @@ import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.chat.Chat;
+import org.jivesoftware.smack.chat.ChatManager;
 import org.jivesoftware.smack.filter.StanzaFilter;
 import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.packet.Stanza;
@@ -102,9 +103,15 @@ public interface IXmppPresenter {
 
     ChatStateManager getChatStateManager();
 
+    ChatManager getChatManager();
+
+    ChatRoomStateManager getChatRoomStateManager();
+
     List<BaseMessage> getMessageList(String jid);
 
     List<BaseRoom> getRoomList();
+
+    BaseRoom getRoom(String roomId);
 
     void refreshRoomListMap();
 

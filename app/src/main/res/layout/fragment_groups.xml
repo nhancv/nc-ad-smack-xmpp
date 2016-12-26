@@ -17,9 +17,9 @@
         android:background="@android:color/darker_gray"/>
 
     <Button
-        android:id="@+id/btChatRoom"
+        android:id="@+id/btCreateRoom"
         style="@style/Widget.AppCompat.Button.Borderless.Colored"
         android:layout_width="match_parent"
         android:layout_height="45dp"
-        android:text="Chart room"/>
+        android:text="Create room"/>
 </LinearLayout>

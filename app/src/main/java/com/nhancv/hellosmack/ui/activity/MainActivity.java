@@ -109,9 +109,10 @@ public class MainActivity extends AppCompatActivity {
     public void messageSubscribe(MessageBus messageBus) {
         BaseMessage baseMessage = (BaseMessage) messageBus.getData();
         if (baseMessage != null) {
-            Log.d(TAG, "messageSubscribe: " + baseMessage);
+            Log.d(TAG, "messageSubscribe: " + baseMessage.getMessage());
         }
         usersFragment.updateAdapter();
+        groupFragment.updateAdapter();
     }
 
     @Subscribe

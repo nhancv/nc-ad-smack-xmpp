@@ -2,7 +2,7 @@ package com.nhancv.hellosmack.ui.fragment;
 
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
-import android.widget.Button;
+import android.text.TextUtils;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -10,6 +10,7 @@ import com.joanzapata.android.BaseAdapterHelper;
 import com.joanzapata.android.QuickAdapter;
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.helper.NUtil;
+import com.nhancv.hellosmack.ui.activity.ChatRoomActivity_;
 import com.nhancv.xmpp.XmppPresenter;
 import com.nhancv.xmpp.listener.XmppListener;
 import com.nhancv.xmpp.model.BaseRoom;
@@ -18,6 +19,7 @@ import com.nhancv.xmpp.model.BaseRoster;
 import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.Click;
 import org.androidannotations.annotations.EFragment;
+import org.androidannotations.annotations.ItemClick;
 import org.androidannotations.annotations.ItemLongClick;
 import org.androidannotations.annotations.ViewById;
 import org.jivesoftware.smack.SmackException;
@@ -34,24 +36,30 @@ import java.util.UUID;
 public class GroupFragment extends Fragment {
     private static final String TAG = GroupFragment.class.getSimpleName();
 
-    @ViewById(R.id.btChatRoom)
-    Button btChatRoom;
     @ViewById(R.id.vListsItems)
     ListView vListsItems;
 
     QuickAdapter<BaseRoom> adapter;
-    MultiUserChat chatRoom;
 
     @AfterViews
     void initView() {
         adapter = new QuickAdapter<BaseRoom>(getContext(), R.layout.view_group_item) {
             @Override
             protected void convert(BaseAdapterHelper helper, BaseRoom room) {
+
+                helper.setText(R.id.tvLastMsg, TextUtils.isEmpty(room.getLastMessage()) ? "..." : room.getLastMessage());
+                helper.setVisible(R.id.tvLastMsg, !TextUtils.isEmpty(room.getLastMessage()));
+
                 helper.setText(R.id.tvGroupId, XmppStringUtils.parseLocalpart(room.getRoomJid()));
                 helper.setText(R.id.tvGroupName, room.getRoomNick() + " " + room.getMembers().size());
             }
         };
         vListsItems.setAdapter(adapter);
+    }
+
+    @ItemClick(R.id.vListsItems)
+    public void listItemClick(BaseRoom baseRoom) {
+        ChatRoomActivity_.intent(getContext()).roomId(baseRoom.getRoomJid()).start();
     }
 
     @ItemLongClick(R.id.vListsItems)
@@ -70,11 +78,11 @@ public class GroupFragment extends Fragment {
         builder.show();
     }
 
-    @Click(R.id.btChatRoom)
-    public void btChatRoomOnClick() {
+    @Click(R.id.btCreateRoom)
+    public void btCreateRoomOnClick() {
         NUtil.aSyncTask(subscriber -> {
             try {
-                chatRoom = XmppPresenter.getInstance().createGroupChat(
+                XmppPresenter.getInstance().createGroupChat(
                         "Test group chat",
                         "Test group description",
                         UUID.randomUUID().toString(),

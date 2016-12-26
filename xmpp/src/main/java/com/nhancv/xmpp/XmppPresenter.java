@@ -124,6 +124,7 @@ public class XmppPresenter implements IXmppPresenter {
     public void logout() {
         userListMap.clear();
         messageListMap.clear();
+        roomListMap.clear();
 
         if (isConnected()) {
             try {
@@ -227,24 +228,41 @@ public class XmppPresenter implements IXmppPresenter {
             StanzaPackageType messagePackageType = new StanzaPackageType(packet -> {
                 if (packet instanceof Message) {
                     Message message = (Message) packet;
-                    for (BaseRoster baseRoster : userListMap.values()) {
-                        String xml = message.toXML().toString();
-                        String jid = XmppStringUtils.parseBareJid(baseRoster.getName());
 
-                        if ((baseRoster.getPresence().isAvailable() || XmppUtil.isOfflineStorage(xml))
-                                && message.getFrom() != null && message.getFrom().contains(jid)
-                                && XmppUtil.isMessage(xml)) {
-                            List<BaseMessage> messageList = new ArrayList<>();
-                            if (messageListMap.containsKey(jid)) {
-                                messageList = messageListMap.get(jid);
+                    if (message.getFrom() != null && XmppUtil.isGroupMessage(message.toXML().toString())) {
+                        String roomId = XmppStringUtils.parseBareJid(message.getFrom());
+                        List<BaseMessage> messageList = new ArrayList<>();
+                        if (messageListMap.containsKey(roomId)) {
+                            messageList = messageListMap.get(roomId);
+                        }
+                        BaseMessage baseMessage = new BaseMessage(message);
+                        messageList.add(baseMessage);
+                        messageListMap.put(roomId, messageList);
+                        BaseRoom baseRoom = roomListMap.get(roomId);
+                        if (baseRoom != null) baseRoom.setLastMessage(message.getBody());
+
+                        messageStanzaListener.callback(baseMessage);
+
+                    } else {
+                        for (BaseRoster baseRoster : userListMap.values()) {
+                            String xml = message.toXML().toString();
+                            String jid = XmppStringUtils.parseBareJid(baseRoster.getName());
+
+                            if ((baseRoster.getPresence().isAvailable() || XmppUtil.isOfflineStorage(xml))
+                                    && message.getFrom() != null && message.getFrom().contains(jid)
+                                    && XmppUtil.isMessage(xml)) {
+                                List<BaseMessage> messageList = new ArrayList<>();
+                                if (messageListMap.containsKey(jid)) {
+                                    messageList = messageListMap.get(jid);
+                                }
+                                BaseMessage baseMessage = new BaseMessage(message);
+                                messageList.add(baseMessage);
+                                messageListMap.put(jid, messageList);
+                                baseRoster.setLastMessage(message.getBody());
+
+                                messageStanzaListener.callback(baseMessage);
+                                break;
                             }
-                            BaseMessage baseMessage = new BaseMessage(message);
-                            messageList.add(baseMessage);
-                            messageListMap.put(jid, messageList);
-                            baseRoster.setLastMessage(message.getBody());
-
-                            messageStanzaListener.callback(baseMessage);
-                            break;
                         }
                     }
                 }
@@ -253,7 +271,6 @@ public class XmppPresenter implements IXmppPresenter {
             //Listener for delivery message
             getDeliveryReceiptManager().addReceiptReceivedListener((fromJid, toJid, receiptId, receipt) -> {
                 String shortJid = XmppStringUtils.parseBareJid(fromJid);
-
                 if (messageListMap.containsKey(shortJid)) {
                     List<BaseMessage> baseMessages = messageListMap.get(shortJid);
                     for (BaseMessage baseMessage : baseMessages) {
@@ -319,7 +336,7 @@ public class XmppPresenter implements IXmppPresenter {
                     new AndFilter(new StanzaTypeFilter(Message.class),
                             new FromMatchesFilter(toJid, true)));
 
-            return ChatManager.getInstanceFor(xmppConnector.getConnection()).createChat(toJid);
+            return getChatManager().createChat(toJid);
         } else {
             return null;
         }
@@ -367,6 +384,16 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
+    public ChatManager getChatManager() {
+        return ChatManager.getInstanceFor(xmppConnector.getConnection());
+    }
+
+    @Override
+    public ChatRoomStateManager getChatRoomStateManager() {
+        return ChatRoomStateManager.getInstance(xmppConnector.getConnection());
+    }
+
+    @Override
     public List<BaseMessage> getMessageList(String jid) {
         jid = XmppStringUtils.parseBareJid(jid);
         if (!messageListMap.containsKey(jid)) {
@@ -378,6 +405,11 @@ public class XmppPresenter implements IXmppPresenter {
     @Override
     public List<BaseRoom> getRoomList() {
         return new ArrayList<>(roomListMap.values());
+    }
+
+    @Override
+    public BaseRoom getRoom(String roomId) {
+        return roomListMap.get(roomId);
     }
 
     @Override
@@ -545,11 +577,6 @@ public class XmppPresenter implements IXmppPresenter {
                     cast_values.add("participant");
                     cast_values.add("visitor");
                     form.setAnswer("muc#roomconfig_presencebroadcast", cast_values);
-
-                    // Sets the new owner of the room
-                    List<String> owners = new ArrayList<>();
-                    owners.add(XmppStringUtils.parseBareJid(ownerJid));
-                    form.setAnswer("muc#roomconfig_roomowners", owners);
 
                     chatRoom.sendConfigurationForm(form);
                     mucListenerRegister(chatRoom, participantListener);

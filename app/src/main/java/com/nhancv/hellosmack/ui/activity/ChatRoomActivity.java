@@ -19,10 +19,12 @@ import com.nhancv.hellosmack.bus.XmppConnBus;
 import com.nhancv.hellosmack.helper.NTextChange;
 import com.nhancv.hellosmack.helper.NUtil;
 import com.nhancv.hellosmack.helper.XmppService;
-import com.nhancv.hellosmack.ui.adapter.ChatAdapter;
+import com.nhancv.hellosmack.ui.adapter.ChatRoomAdapter;
+import com.nhancv.xmpp.ChatRoomStateManager;
 import com.nhancv.xmpp.XmppPresenter;
 import com.nhancv.xmpp.XmppUtil;
 import com.nhancv.xmpp.model.BaseMessage;
+import com.nhancv.xmpp.model.BaseRoom;
 import com.nhancv.xmpp.model.BaseRoster;
 
 import org.androidannotations.annotations.AfterViews;
@@ -31,13 +33,10 @@ import org.androidannotations.annotations.EActivity;
 import org.androidannotations.annotations.Extra;
 import org.androidannotations.annotations.ViewById;
 import org.greenrobot.eventbus.Subscribe;
+import org.jivesoftware.smack.MessageListener;
 import org.jivesoftware.smack.SmackException;
-import org.jivesoftware.smack.StanzaListener;
-import org.jivesoftware.smack.chat.Chat;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smackx.chatstates.ChatState;
-import org.jivesoftware.smackx.chatstates.ChatStateManager;
-import org.jivesoftware.smackx.receipts.DeliveryReceiptRequest;
 import org.jxmpp.util.XmppStringUtils;
 
 import java.util.List;
@@ -46,9 +45,9 @@ import java.util.List;
  * Created by nhancao on 9/7/16.
  */
 @EActivity(R.layout.activity_chat)
-public class ChatActivity extends AppCompatActivity {
+public class ChatRoomActivity extends AppCompatActivity {
 
-    private static final String TAG = ChatActivity.class.getName();
+    private static final String TAG = ChatRoomActivity.class.getName();
     @ViewById(R.id.vToolbar)
     Toolbar vToolbar;
 
@@ -60,17 +59,17 @@ public class ChatActivity extends AppCompatActivity {
     TextView tvTyping;
 
     @Extra
-    String address;
-    private Chat chat;
-    private ChatAdapter adapter;
-    private StanzaListener chatSessionListener;
-    private ChatStateManager chatStateManager;
+    String roomId;
+    BaseRoom chatRoom;
+
+    private ChatRoomAdapter adapter;
+    private ChatRoomStateManager chatRoomStateManager;
     private List<BaseMessage> listBaseMessage;
     private NTextChange editTextAutoChange = new NTextChange(new NTextChange.TextListener() {
         @Override
         public void after(Editable editable) {
             try {
-                chatStateManager.setCurrentState(ChatState.inactive, chat);
+                chatRoomStateManager.setCurrentState(ChatState.inactive, chatRoom.getMultiUserChat());
             } catch (SmackException.NotConnectedException e) {
                 e.printStackTrace();
             }
@@ -79,7 +78,7 @@ public class ChatActivity extends AppCompatActivity {
         @Override
         public void before() {
             try {
-                chatStateManager.setCurrentState(ChatState.composing, chat);
+                chatRoomStateManager.setCurrentState(ChatState.composing, chatRoom.getMultiUserChat());
             } catch (SmackException.NotConnectedException e) {
                 e.printStackTrace();
             }
@@ -142,23 +141,26 @@ public class ChatActivity extends AppCompatActivity {
 
     @AfterViews
     void initView() {
-        setupToolbar(vToolbar, "Chat activity");
+        setupToolbar(vToolbar, XmppStringUtils.parseBareJid(roomId));
 
         vListsItems = (RecyclerView) findViewById(R.id.vListsItems);
-        adapter = new ChatAdapter();
+        adapter = new ChatRoomAdapter();
         LinearLayoutManager llm = new LinearLayoutManager(this);
         llm.setOrientation(LinearLayoutManager.VERTICAL);
         vListsItems.setHasFixedSize(true);
         vListsItems.setLayoutManager(llm);
         vListsItems.setAdapter(adapter);
 
-        chatStateManager = XmppPresenter.getInstance().getChatStateManager();
-        listBaseMessage = XmppPresenter.getInstance().getMessageList(address);
+        chatRoomStateManager = XmppPresenter.getInstance().getChatRoomStateManager();
+        chatRoom = XmppPresenter.getInstance().getRoom(roomId);
+
+        listBaseMessage = XmppPresenter.getInstance().getMessageList(roomId);
         adapter.setListsItems(listBaseMessage);
-        chatSessionListener = packet -> {
-            if (packet instanceof Message) {
-                Message message = (Message) packet;
-                BaseRoster roster = XmppPresenter.getInstance().getRoster(message.getFrom());
+
+        chatRoom.getMultiUserChat().addMessageListener(new MessageListener() {
+            @Override
+            public void processMessage(Message message) {
+                BaseRoster roster = XmppPresenter.getInstance().getRoster(XmppStringUtils.parseResource(message.getFrom()));
                 if (roster != null && roster.getPresence().isAvailable()) {
                     String xml = message.toXML().toString();
                     if (XmppUtil.isMessage(xml)) {
@@ -177,16 +179,11 @@ public class ChatActivity extends AppCompatActivity {
                         });
                     }
                 }
+
             }
-        };
+        });
 
-        chat = XmppPresenter.getInstance().openChatSession(chatSessionListener, address);
-
-        if (chat != null) {
-            setupToolbar(vToolbar, XmppStringUtils.parseBareJid(address));
-        }
         etInput.addTextChangedListener(editTextAutoChange);
-
         vListsItems.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
@@ -224,13 +221,9 @@ public class ChatActivity extends AppCompatActivity {
     void btSendOnClick() {
         try {
             if (etInput.getText().length() > 0) {
-                Message message = new Message(address);
+                Message message = new Message(roomId, Message.Type.groupchat);
                 message.setBody(etInput.getText().toString());
-                DeliveryReceiptRequest.addTo(message);
-                chat.sendMessage(message);
-                listBaseMessage.add(new BaseMessage(message, true));
-                updateAdapter();
-                vListsItems.smoothScrollToPosition(adapter.getItemCount());
+                chatRoom.getMultiUserChat().sendMessage(message);
             }
         } catch (SmackException.NotConnectedException e) {
             e.printStackTrace();
@@ -238,13 +231,6 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     public void btCloseOnClick() {
-        if (chat != null) {
-            chat.close();
-            chat = null;
-        }
-        if (chatSessionListener != null) {
-            XmppPresenter.getInstance().closeChatSession(chatSessionListener);
-        }
         finish();
     }
 

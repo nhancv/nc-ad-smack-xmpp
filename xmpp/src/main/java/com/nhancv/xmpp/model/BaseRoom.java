@@ -14,6 +14,7 @@ public class BaseRoom {
     private String roomNick;
     private MultiUserChat multiUserChat;
     private List<Occupant> members;
+    private String lastMessage;
 
     public BaseRoom(MultiUserChat multiUserChat, List<Occupant> members) {
         this.multiUserChat = multiUserChat;
@@ -36,5 +37,13 @@ public class BaseRoom {
 
     public MultiUserChat getMultiUserChat() {
         return multiUserChat;
+    }
+
+    public String getLastMessage() {
+        return lastMessage;
+    }
+
+    public void setLastMessage(String lastMessage) {
+        this.lastMessage = lastMessage;
     }
 }

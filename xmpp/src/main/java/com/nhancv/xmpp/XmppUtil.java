@@ -47,6 +47,10 @@ public class XmppUtil {
         return xmlMessage.matches("(.*)<" + ChatState.gone.name() + "(.*)/>(.*)");
     }
 
+    public static boolean isGroupMessage(String xmlMessage) {
+        return xmlMessage.matches("<message(.*)from='(.*)@conference.(.*)' (.*)type='groupchat'>(.*)<body>(.*)</body>(.*)");
+    }
+
     public static boolean isMessage(String xmlMessage) {
         return xmlMessage.matches("(.*)<body>(.*)</body>(.*)");
     }
