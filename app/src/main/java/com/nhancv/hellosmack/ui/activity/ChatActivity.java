@@ -227,6 +227,8 @@ public class ChatActivity extends AppCompatActivity {
                 Message message = new Message(address);
                 message.setBody(etInput.getText().toString());
                 DeliveryReceiptRequest.addTo(message);
+                Log.e(TAG, "btSendOnClick: " + message);
+
                 chat.sendMessage(message);
                 listBaseMessage.add(new BaseMessage(message, true));
                 updateAdapter();

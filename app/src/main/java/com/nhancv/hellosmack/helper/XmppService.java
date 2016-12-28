@@ -39,6 +39,8 @@ public class XmppService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
+
+        XmppPresenter.getInstance().enableCarbonMessage();
         XmppPresenter.getInstance().connectionListenerRegister(new ErrorXmppConListener() {
             @Override
             public void connectionClosed() {

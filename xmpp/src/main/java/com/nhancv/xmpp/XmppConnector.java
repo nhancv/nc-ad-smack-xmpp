@@ -16,6 +16,7 @@ import org.jivesoftware.smack.tcp.XMPPTCPConnection;
 import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration;
 
 import java.io.IOException;
+import java.util.UUID;
 
 /**
  * Created by nhancao on 12/13/16.
@@ -70,10 +71,11 @@ public class XmppConnector implements IXmppConnector {
         }
         configBuilder.setSecurityMode(ConnectionConfiguration.SecurityMode.disabled);
         configBuilder.setDebuggerEnabled(true);
-        configBuilder.setResource("Android");
+        configBuilder.setResource(UUID.randomUUID().toString());
         configBuilder.setServiceName(xmppConfig.getDomain());
         configBuilder.setHost(xmppConfig.getHost());
         configBuilder.setPort(xmppConfig.getPort());
+
         configBuilder.setDebuggerEnabled(false);
 //        For offline message
 //        configBuilder.setSendPresence(false);

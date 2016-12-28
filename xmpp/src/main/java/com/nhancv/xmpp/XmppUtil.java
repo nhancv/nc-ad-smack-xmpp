@@ -2,11 +2,15 @@ package com.nhancv.xmpp;
 
 import com.nhancv.xmpp.model.ParticipantPresence;
 
+import org.jivesoftware.smack.packet.ExtensionElement;
+import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smackx.chatstates.ChatState;
+import org.jxmpp.util.XmppStringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -22,9 +26,18 @@ import javax.xml.parsers.ParserConfigurationException;
  */
 
 public class XmppUtil {
+    private static final String TAG = XmppUtil.class.getSimpleName();
 
-    public static boolean isDelivered(String xmlMessage) {
+    public static boolean isReceived(String xmlMessage) {
         return xmlMessage.matches("(.*)<received xmlns='urn:xmpp:receipts' id='(.*)'/>(.*)");
+    }
+
+    public static boolean isForwarded(String xmlMessage) {
+        return xmlMessage.matches("(.*)<forwarded xmlns='urn:xmpp:forward:0'>(.*)");
+    }
+
+    public static boolean isMe(Message message) {
+        return XmppStringUtils.parseBareJid(message.getFrom()).contains(XmppStringUtils.parseBareJid(message.getTo()));
     }
 
     public static boolean isActive(String xmlMessage) {
@@ -75,6 +88,63 @@ public class XmppUtil {
             Document document = builder.parse(new InputSource(new StringReader(xml)));
             return document.getDocumentElement();
         } catch (ParserConfigurationException | SAXException | IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static Message parseForwardedMessage(Message message) {
+        try {
+            String xmlMessage = message.toXML().toString();
+
+            if (isMe(message) && isForwarded(xmlMessage)) {
+                Message msg = new Message();
+
+                ExtensionElement isSent = message.getExtension("sent", "urn:xmpp:carbons:2");
+                ExtensionElement isReceived = message.getExtension("received", "urn:xmpp:carbons:2");
+                String xml;
+                if (isSent != null) {
+                    xml = isSent.toXML().toString();
+                } else if (isReceived != null) {
+                    xml = isReceived.toXML().toString();
+                } else {
+                    return null;
+                }
+
+                Element element = XmppUtil.getRootElement(xml);
+
+                if (element != null) {
+                    Node messageNode = element.getFirstChild().getFirstChild();
+                    boolean isBody = messageNode.getFirstChild().getNodeName().equals("body");
+                    boolean isRecv = messageNode.getFirstChild().getNodeName().equals("received");
+                    NamedNodeMap namedNodeMap = messageNode.getAttributes();
+                    String from = namedNodeMap.getNamedItem("from").getNodeValue();
+                    String to = namedNodeMap.getNamedItem("to").getNodeValue();
+                    String id = namedNodeMap.getNamedItem("id").getNodeValue();
+
+                    if (isBody) {
+                        String body = null;
+                        try {
+                            Node bodyNode = messageNode.getFirstChild().getFirstChild();
+                            if (bodyNode != null)
+                                body = bodyNode.getNodeValue();
+                        } catch (Exception ignored) {
+                        }
+                        msg.setType(Message.Type.chat);
+                        msg.setBody(body);
+                    } else if (isRecv) {
+                        id = messageNode.getFirstChild().getAttributes().getNamedItem("id").getNodeValue();
+                    }
+                    msg.setFrom(XmppStringUtils.parseBareJid(from));
+                    msg.setTo(XmppStringUtils.parseBareJid(to));
+                    msg.setStanzaId(id);
+
+                }
+                return msg;
+            } else {
+                return null;
+            }
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;

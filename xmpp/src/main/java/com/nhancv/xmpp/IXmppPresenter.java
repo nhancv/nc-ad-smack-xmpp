@@ -47,6 +47,10 @@ public interface IXmppPresenter {
 
     void connectionListenerRegister(ConnectionListener connectionListener);
 
+    void enableCarbonMessage();
+
+    void disableCarbonMessage();
+
     boolean isConnected();
 
     String getCurrentUser();

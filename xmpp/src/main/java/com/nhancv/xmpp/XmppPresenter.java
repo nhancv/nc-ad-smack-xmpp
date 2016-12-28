@@ -29,6 +29,7 @@ import org.jivesoftware.smack.roster.Roster;
 import org.jivesoftware.smack.roster.RosterEntry;
 import org.jivesoftware.smack.roster.RosterListener;
 import org.jivesoftware.smack.roster.packet.RosterPacket;
+import org.jivesoftware.smackx.carbons.CarbonManager;
 import org.jivesoftware.smackx.chatstates.ChatStateManager;
 import org.jivesoftware.smackx.iqregister.AccountManager;
 import org.jivesoftware.smackx.muc.DefaultParticipantStatusListener;
@@ -143,6 +144,36 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
+    public void enableCarbonMessage() {
+        if (isConnected()) {
+            try {
+                CarbonManager cm = CarbonManager.getInstanceFor(xmppConnector.getConnection());
+                if (cm.isSupportedByServer()) {
+                    cm.enableCarbons();
+                    cm.sendCarbonsEnabled(true);
+                }
+            } catch (XMPPException | SmackException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public void disableCarbonMessage() {
+        if (isConnected()) {
+            try {
+                CarbonManager cm = CarbonManager.getInstanceFor(xmppConnector.getConnection());
+                if (cm.isSupportedByServer()) {
+                    cm.disableCarbons();
+                    cm.sendCarbonsEnabled(false);
+                }
+            } catch (XMPPException | SmackException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
     public boolean isConnected() {
         return xmppConnector != null && xmppConnector.getConnection().isConnected();
     }
@@ -228,7 +259,6 @@ public class XmppPresenter implements IXmppPresenter {
             StanzaPackageType messagePackageType = new StanzaPackageType(packet -> {
                 if (packet instanceof Message) {
                     Message message = (Message) packet;
-
                     if (message.getFrom() != null && XmppUtil.isGroupMessage(message.toXML().toString())) {
                         String roomId = XmppStringUtils.parseBareJid(message.getFrom());
                         List<BaseMessage> messageList = new ArrayList<>();
@@ -244,24 +274,59 @@ public class XmppPresenter implements IXmppPresenter {
                         messageStanzaListener.callback(baseMessage);
 
                     } else {
-                        for (BaseRoster baseRoster : userListMap.values()) {
-                            String xml = message.toXML().toString();
-                            String jid = XmppStringUtils.parseBareJid(baseRoster.getName());
 
-                            if ((baseRoster.getPresence().isAvailable() || XmppUtil.isOfflineStorage(xml))
-                                    && message.getFrom() != null && message.getFrom().contains(jid)
-                                    && XmppUtil.isMessage(xml)) {
+                        Message parseForwardedMessage = XmppUtil.parseForwardedMessage(message);
+
+                        if (parseForwardedMessage != null) {
+                            if (XmppUtil.isReceived(message.toXML().toString())) {
+                                String jid = XmppStringUtils.parseBareJid(parseForwardedMessage.getFrom());
+
+                                if (messageListMap.containsKey(jid)) {
+                                    List<BaseMessage> baseMessages = messageListMap.get(jid);
+                                    for (BaseMessage baseMessage : baseMessages) {
+                                        if (baseMessage.getMessage().getStanzaId().equals(parseForwardedMessage.getStanzaId())) {
+                                            baseMessage.setDelivered(true);
+
+                                            messageStanzaListener.callback(baseMessage);
+                                            break;
+                                        }
+                                    }
+                                }
+                            } else if (XmppUtil.isMessage(parseForwardedMessage.toXML().toString())) {
+                                String jid = XmppStringUtils.parseBareJid(parseForwardedMessage.getTo());
+
                                 List<BaseMessage> messageList = new ArrayList<>();
                                 if (messageListMap.containsKey(jid)) {
                                     messageList = messageListMap.get(jid);
                                 }
-                                BaseMessage baseMessage = new BaseMessage(message);
+                                BaseMessage baseMessage = new BaseMessage(parseForwardedMessage, true);
                                 messageList.add(baseMessage);
                                 messageListMap.put(jid, messageList);
-                                baseRoster.setLastMessage(message.getBody());
 
                                 messageStanzaListener.callback(baseMessage);
-                                break;
+                            }
+                        } else {
+                            String xml = message.toXML().toString();
+                            if (XmppUtil.isMessage(xml)) {
+                                for (BaseRoster baseRoster : userListMap.values()) {
+                                    String jid = XmppStringUtils.parseBareJid(baseRoster.getName());
+
+                                    if ((baseRoster.getPresence().isAvailable() || XmppUtil.isOfflineStorage(xml))
+                                            && message.getFrom() != null && message.getFrom().contains(jid)
+                                            && XmppUtil.isMessage(xml)) {
+                                        List<BaseMessage> messageList = new ArrayList<>();
+                                        if (messageListMap.containsKey(jid)) {
+                                            messageList = messageListMap.get(jid);
+                                        }
+                                        BaseMessage baseMessage = new BaseMessage(message);
+                                        messageList.add(baseMessage);
+                                        messageListMap.put(jid, messageList);
+                                        baseRoster.setLastMessage(message.getBody());
+
+                                        messageStanzaListener.callback(baseMessage);
+                                        break;
+                                    }
+                                }
                             }
                         }
                     }
@@ -289,7 +354,8 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
-    public void addAsyncStanzaListener(StanzaListener packetListener, StanzaFilter packetFilter) {
+    public void addAsyncStanzaListener(StanzaListener packetListener, StanzaFilter
+            packetFilter) {
         if (isConnected()) {
             xmppConnector.getConnection().addAsyncStanzaListener(packetListener, packetFilter);
         }
@@ -428,12 +494,14 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
-    public Roster setupRosterList(@NonNull XmppListener.IXmppCallback<BaseRoster> updateListener) {
+    public Roster setupRosterList
+            (@NonNull XmppListener.IXmppCallback<BaseRoster> updateListener) {
         return setupRosterList(null, updateListener);
     }
 
     @Override
-    public Roster setupRosterList(RosterListener rosterListener, XmppListener.IXmppCallback<BaseRoster> updateListener) {
+    public Roster setupRosterList(RosterListener
+                                          rosterListener, XmppListener.IXmppCallback<BaseRoster> updateListener) {
         if (isConnected()) {
             Roster roster = Roster.getInstanceFor(xmppConnector.getConnection());
             Collection<RosterEntry> entries = roster.getEntries();
@@ -469,7 +537,8 @@ public class XmppPresenter implements IXmppPresenter {
                                 if (item.contains(jid)) {
                                     Presence presence = roster.getPresence(item);
                                     baseRoster.setPresence(presence);
-                                    if (updateListener != null) updateListener.callback(baseRoster);
+                                    if (updateListener != null)
+                                        updateListener.callback(baseRoster);
                                     break;
                                 }
                             }
@@ -485,7 +554,8 @@ public class XmppPresenter implements IXmppPresenter {
                                 String jid = XmppStringUtils.parseBareJid(baseRoster.getName());
                                 if (item.contains(jid)) {
                                     userListMap.values().remove(baseRoster);
-                                    if (updateListener != null) updateListener.callback(baseRoster);
+                                    if (updateListener != null)
+                                        updateListener.callback(baseRoster);
                                     break;
                                 }
                             }
@@ -537,7 +607,8 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
-    public MultiUserChat createGroupChat(String groupName, String description, String roomId, String ownerJid,
+    public MultiUserChat createGroupChat(String groupName, String description, String
+            roomId, String ownerJid,
                                          XmppListener.CreateGroupListener createGroupListener,
                                          XmppListener.ParticipantListener participantListener)
             throws XMPPException.XMPPErrorException, SmackException {
@@ -606,7 +677,8 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
-    public BaseError joinRoom(MultiUserChat muc, XmppListener.ParticipantListener participantListener, String nickName) {
+    public BaseError joinRoom(MultiUserChat muc, XmppListener.ParticipantListener
+            participantListener, String nickName) {
         if (muc != null && isConnected()) {
             try {
                 muc.join(nickName);
@@ -621,7 +693,8 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
-    public void mucListenerRegister(MultiUserChat muc, final XmppListener.ParticipantListener participantListener) {
+    public void mucListenerRegister(MultiUserChat muc,
+                                    final XmppListener.ParticipantListener participantListener) {
         muc.addParticipantListener(presence -> {
             ParticipantPresence participant = XmppUtil.getParticipantPresence(presence);
             if (participant != null) {
@@ -669,6 +742,7 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     //Other implement
+
     public void searchUser(String user) {
         try {
             Log.e(TAG, "searchUser: ");
