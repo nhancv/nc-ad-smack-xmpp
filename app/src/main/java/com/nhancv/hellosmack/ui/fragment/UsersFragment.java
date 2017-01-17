@@ -7,6 +7,7 @@ import android.support.v7.app.AlertDialog;
 import android.text.InputType;
 import android.text.TextUtils;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 
@@ -33,9 +34,12 @@ public class UsersFragment extends Fragment {
     private static final String TAG = UsersFragment.class.getName();
     @ViewById(R.id.vListsItems)
     ListView vListsItems;
+    @ViewById(R.id.btEditContact)
+    Button btEditContact;
 
     QuickAdapter<BaseRoster> adapter;
     AlertDialog addContact;
+    private boolean deleteMode;
 
     @AfterViews
     void initView() {
@@ -53,6 +57,8 @@ public class UsersFragment extends Fragment {
                 if (user.getPresence().isAvailable()) {
                     color = ContextCompat.getColor(getContext(), R.color.online_status);
                 }
+
+                helper.setVisible(R.id.vChatDelete, deleteMode);
 
                 View vStatus = helper.getView(R.id.vStatus);
                 GradientDrawable gd = (GradientDrawable) vStatus.getBackground().getCurrent();
@@ -87,6 +93,17 @@ public class UsersFragment extends Fragment {
     @Click(R.id.btAddContact)
     void btAddContactOnClick() {
         addContact.show();
+    }
+
+    @Click(R.id.btEditContact)
+    void btEditContactOnClick() {
+        deleteMode = !deleteMode;
+        adapter.notifyDataSetChanged();
+        if (deleteMode) {
+            btEditContact.setText("Done");
+        } else {
+            btEditContact.setText("Edit");
+        }
     }
 
     public void updateAdapter() {
