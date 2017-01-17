@@ -8,7 +8,7 @@ public class XmppConfig implements IXmppConfig {
 
     private static final String HOST = "local.beesightsoft.com";
     private static final String DOMAIN = "local.beesightsoft.com";
-    private static final int PORT = 7008;
+    private static final int PORT = 6001;
 
     @Override
     public String getHost() {

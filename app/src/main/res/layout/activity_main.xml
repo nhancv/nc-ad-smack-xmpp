@@ -28,11 +28,13 @@
                 android:id="@+id/vTabs"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="1dp"
-                android:background="@android:color/white"
+                android:layout_marginBottom="0dp"
+                android:background="@color/colorPrimaryDark"
                 android:elevation="1dp"
                 app:tabGravity="fill"
-                app:tabMode="fixed"/>
+                app:tabMode="fixed"
+                app:tabSelectedTextColor="@android:color/white"
+                app:tabTextColor="#9ea8b2"/>
         </LinearLayout>
 
         <android.support.v4.view.ViewPager
@@ -40,6 +42,7 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
+            android:background="@color/colorPrimary"
             app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
 
     </LinearLayout>
