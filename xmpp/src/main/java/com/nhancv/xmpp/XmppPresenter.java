@@ -259,6 +259,8 @@ public class XmppPresenter implements IXmppPresenter {
             StanzaPackageType messagePackageType = new StanzaPackageType(packet -> {
                 if (packet instanceof Message) {
                     Message message = (Message) packet;
+                    Log.e(TAG, "addMessageStanzaListener: " + message.toXML().toString());
+
                     if (message.getFrom() != null && XmppUtil.isGroupMessage(message.toXML().toString())) {
                         String roomId = XmppStringUtils.parseBareJid(message.getFrom());
                         List<BaseMessage> messageList = new ArrayList<>();
@@ -299,7 +301,7 @@ public class XmppPresenter implements IXmppPresenter {
                                 if (messageListMap.containsKey(jid)) {
                                     messageList = messageListMap.get(jid);
                                 }
-                                BaseMessage baseMessage = new BaseMessage(parseForwardedMessage, true);
+                                BaseMessage baseMessage = new BaseMessage(parseForwardedMessage, false);
                                 messageList.add(baseMessage);
                                 messageListMap.put(jid, messageList);
 

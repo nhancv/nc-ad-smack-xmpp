@@ -16,6 +16,7 @@ import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.bus.MessageBus;
 import com.nhancv.hellosmack.bus.RosterBus;
 import com.nhancv.hellosmack.bus.XmppConnBus;
+import com.nhancv.hellosmack.helper.NBody;
 import com.nhancv.hellosmack.helper.NTextChange;
 import com.nhancv.hellosmack.helper.NUtil;
 import com.nhancv.hellosmack.helper.XmppService;
@@ -61,7 +62,7 @@ public class ChatActivity extends AppCompatActivity {
 
     @Extra
     String address;
-    private Chat chat;
+    private Chat chat, chatNotify;
     private ChatAdapter adapter;
     private StanzaListener chatSessionListener;
     private ChatStateManager chatStateManager;
@@ -181,6 +182,8 @@ public class ChatActivity extends AppCompatActivity {
         };
 
         chat = XmppPresenter.getInstance().openChatSession(chatSessionListener, address);
+        chatNotify = XmppPresenter.getInstance().getChatManager()
+                .createChat(XmppStringUtils.parseBareJid(XmppPresenter.getInstance().getCurrentUser()));
 
         if (chat != null) {
             setupToolbar(vToolbar, XmppStringUtils.parseBareJid(address));
@@ -195,7 +198,17 @@ public class ChatActivity extends AppCompatActivity {
                     int bot = llm.findLastCompletelyVisibleItemPosition();
                     for (int i = top; i <= bot; i++) {
                         try {
-                            listBaseMessage.get(i).setRead(true);
+                            if (!listBaseMessage.get(i).isRead()) {
+                                Message message = new Message(XmppStringUtils.parseBareJid(XmppPresenter.getInstance().getCurrentUser()));
+                                String content = String.format("-uid-%1$s-mid-%2$s-end-",
+                                        XmppStringUtils.parseLocalpart(address),
+                                        listBaseMessage.get(i).getMessage().getStanzaId());
+                                message.setBody(new NBody("notify", true, content).toString());
+                                chatNotify.sendMessage(message);
+                                Log.e(TAG, "onScrollStateChanged: send " + i + "-" + message.getBody());
+                                listBaseMessage.get(i).setRead(true);
+                            }
+
                         } catch (Exception ignored) {
                         }
                     }
@@ -225,12 +238,13 @@ public class ChatActivity extends AppCompatActivity {
         try {
             if (etInput.getText().length() > 0) {
                 Message message = new Message(address);
-                message.setBody(etInput.getText().toString());
+                message.setBody(new NBody("chat", false, etInput.getText().toString()).toString());
                 DeliveryReceiptRequest.addTo(message);
                 Log.e(TAG, "btSendOnClick: " + message);
 
                 chat.sendMessage(message);
-                listBaseMessage.add(new BaseMessage(message, true));
+
+                listBaseMessage.add(new BaseMessage(message, false));
                 updateAdapter();
                 vListsItems.smoothScrollToPosition(adapter.getItemCount());
             }
