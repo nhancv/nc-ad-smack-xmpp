@@ -28,6 +28,10 @@ import javax.xml.parsers.ParserConfigurationException;
 public class XmppUtil {
     private static final String TAG = XmppUtil.class.getSimpleName();
 
+    public static boolean isNotify(String xmlMessage) {
+        return xmlMessage.matches("(.*)\"type\":\"notify\"(.*)");
+    }
+
     public static boolean isReceived(String xmlMessage) {
         return xmlMessage.matches("(.*)<received xmlns='urn:xmpp:receipts' id='(.*)'/>(.*)");
     }

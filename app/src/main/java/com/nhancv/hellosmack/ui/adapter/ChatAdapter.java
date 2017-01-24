@@ -52,7 +52,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ListsHolder> {
         boolean isLeft = !XmppStringUtils.parseBareJid(to).contains(
                 parseBareJid(XmppPresenter.getInstance().getCurrentUser()));
 
-        String title = baseMessage.getMessage().getTo() + (isLeft ? (baseMessage.isDelivered() ? " - delivered" : " - sent") : "");
+        String title = baseMessage.getMessage().getTo() + (isLeft ? (baseMessage.isSeen() ? " - seen" : (baseMessage.isDelivered() ? " - delivered" : " - sent")) : "");
         holder.tvTo.setText(title);
         holder.tvMsg.setText(baseMessage.getMessage().getBody());
 

@@ -1,6 +1,7 @@
-package com.nhancv.hellosmack.helper;
+package com.nhancv.hellosmack.model;
 
 import com.google.gson.Gson;
+import com.google.gson.annotations.SerializedName;
 
 import java.io.Serializable;
 
@@ -10,13 +11,19 @@ import java.io.Serializable;
 
 public class NBody implements Serializable {
 
+    @SerializedName("type")
     private String type; //chat, file, image, notify
+    @SerializedName("read")
     private boolean read;
+    @SerializedName("seen")
+    private boolean seen;
+    @SerializedName("content")
     private String content;
 
-    public NBody(String type, boolean read, String content) {
+    public NBody(String type, String content) {
         this.type = type;
-        this.read = read;
+        this.read = false;
+        this.seen = false;
         this.content = content;
     }
 

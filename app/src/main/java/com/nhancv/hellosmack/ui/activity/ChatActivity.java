@@ -16,10 +16,11 @@ import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.bus.MessageBus;
 import com.nhancv.hellosmack.bus.RosterBus;
 import com.nhancv.hellosmack.bus.XmppConnBus;
-import com.nhancv.hellosmack.helper.NBody;
 import com.nhancv.hellosmack.helper.NTextChange;
 import com.nhancv.hellosmack.helper.NUtil;
 import com.nhancv.hellosmack.helper.XmppService;
+import com.nhancv.hellosmack.model.NBody;
+import com.nhancv.hellosmack.model.Notify;
 import com.nhancv.hellosmack.ui.adapter.ChatAdapter;
 import com.nhancv.xmpp.XmppPresenter;
 import com.nhancv.xmpp.XmppUtil;
@@ -62,7 +63,7 @@ public class ChatActivity extends AppCompatActivity {
 
     @Extra
     String address;
-    private Chat chat, chatNotify;
+    private Chat chat;
     private ChatAdapter adapter;
     private StanzaListener chatSessionListener;
     private ChatStateManager chatStateManager;
@@ -182,8 +183,6 @@ public class ChatActivity extends AppCompatActivity {
         };
 
         chat = XmppPresenter.getInstance().openChatSession(chatSessionListener, address);
-        chatNotify = XmppPresenter.getInstance().getChatManager()
-                .createChat(XmppStringUtils.parseBareJid(XmppPresenter.getInstance().getCurrentUser()));
 
         if (chat != null) {
             setupToolbar(vToolbar, XmppStringUtils.parseBareJid(address));
@@ -199,12 +198,11 @@ public class ChatActivity extends AppCompatActivity {
                     for (int i = top; i <= bot; i++) {
                         try {
                             if (!listBaseMessage.get(i).isRead()) {
-                                Message message = new Message(XmppStringUtils.parseBareJid(XmppPresenter.getInstance().getCurrentUser()));
-                                String content = String.format("-uid-%1$s-mid-%2$s-end-",
-                                        XmppStringUtils.parseLocalpart(address),
+                                Message message = new Message(address);
+                                String content = String.format("-mid-%1$s-end-",
                                         listBaseMessage.get(i).getMessage().getStanzaId());
-                                message.setBody(new NBody("notify", true, content).toString());
-                                chatNotify.sendMessage(message);
+                                message.setBody(new Notify(content).toString());
+                                chat.sendMessage(message);
                                 Log.e(TAG, "onScrollStateChanged: send " + i + "-" + message.getBody());
                                 listBaseMessage.get(i).setRead(true);
                             }
@@ -238,7 +236,7 @@ public class ChatActivity extends AppCompatActivity {
         try {
             if (etInput.getText().length() > 0) {
                 Message message = new Message(address);
-                message.setBody(new NBody("chat", false, etInput.getText().toString()).toString());
+                message.setBody(new NBody("chat", etInput.getText().toString()).toString());
                 DeliveryReceiptRequest.addTo(message);
                 Log.e(TAG, "btSendOnClick: " + message);
 
@@ -258,6 +256,7 @@ public class ChatActivity extends AppCompatActivity {
             chat.close();
             chat = null;
         }
+
         if (chatSessionListener != null) {
             XmppPresenter.getInstance().closeChatSession(chatSessionListener);
         }

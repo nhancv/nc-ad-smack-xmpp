@@ -3,9 +3,11 @@ package com.nhancv.xmpp;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+import com.google.gson.Gson;
 import com.nhancv.xmpp.listener.XmppListener;
 import com.nhancv.xmpp.model.BaseError;
 import com.nhancv.xmpp.model.BaseMessage;
+import com.nhancv.xmpp.model.BaseNotify;
 import com.nhancv.xmpp.model.BaseRoom;
 import com.nhancv.xmpp.model.BaseRoster;
 import com.nhancv.xmpp.model.ParticipantPresence;
@@ -38,8 +40,6 @@ import org.jivesoftware.smackx.muc.MultiUserChatManager;
 import org.jivesoftware.smackx.muc.Occupant;
 import org.jivesoftware.smackx.offline.OfflineMessageManager;
 import org.jivesoftware.smackx.receipts.DeliveryReceiptManager;
-import org.jivesoftware.smackx.search.ReportedData;
-import org.jivesoftware.smackx.search.UserSearchManager;
 import org.jivesoftware.smackx.xdata.Form;
 import org.jivesoftware.smackx.xdata.FormField;
 import org.jxmpp.util.XmppStringUtils;
@@ -310,23 +310,55 @@ public class XmppPresenter implements IXmppPresenter {
                         } else {
                             String xml = message.toXML().toString();
                             if (XmppUtil.isMessage(xml)) {
-                                for (BaseRoster baseRoster : userListMap.values()) {
-                                    String jid = XmppStringUtils.parseBareJid(baseRoster.getName());
 
-                                    if ((baseRoster.getPresence().isAvailable() || XmppUtil.isOfflineStorage(xml))
-                                            && message.getFrom() != null && message.getFrom().contains(jid)
-                                            && XmppUtil.isMessage(xml)) {
-                                        List<BaseMessage> messageList = new ArrayList<>();
-                                        if (messageListMap.containsKey(jid)) {
-                                            messageList = messageListMap.get(jid);
+                                if (XmppUtil.isNotify(message.getBody())) {
+
+                                    BaseNotify notify = new Gson().fromJson(message.getBody(), BaseNotify.class);
+                                    String mid = notify.getContent().replace("-mid-", "").replace("-end-", "");
+                                    for (BaseRoster baseRoster : userListMap.values()) {
+                                        String jid = XmppStringUtils.parseBareJid(baseRoster.getName());
+
+                                        if ((baseRoster.getPresence().isAvailable() || XmppUtil.isOfflineStorage(xml))
+                                                && message.getFrom() != null && message.getFrom().contains(jid)
+                                                && XmppUtil.isMessage(xml)) {
+                                            List<BaseMessage> messageList = new ArrayList<>();
+                                            if (messageListMap.containsKey(jid)) {
+                                                messageList = messageListMap.get(jid);
+                                            }
+
+                                            for (BaseMessage baseMessage : messageList) {
+                                                if (baseMessage.getMessage().getStanzaId().equals(mid)) {
+                                                    baseMessage.setSeen(true);
+
+                                                    messageListMap.put(jid, messageList);
+                                                    messageStanzaListener.callback(baseMessage);
+                                                    break;
+                                                }
+                                            }
+                                            break;
                                         }
-                                        BaseMessage baseMessage = new BaseMessage(message);
-                                        messageList.add(baseMessage);
-                                        messageListMap.put(jid, messageList);
-                                        baseRoster.setLastMessage(message.getBody());
+                                    }
 
-                                        messageStanzaListener.callback(baseMessage);
-                                        break;
+                                } else {
+
+                                    for (BaseRoster baseRoster : userListMap.values()) {
+                                        String jid = XmppStringUtils.parseBareJid(baseRoster.getName());
+
+                                        if ((baseRoster.getPresence().isAvailable() || XmppUtil.isOfflineStorage(xml))
+                                                && message.getFrom() != null && message.getFrom().contains(jid)
+                                                && XmppUtil.isMessage(xml)) {
+                                            List<BaseMessage> messageList = new ArrayList<>();
+                                            if (messageListMap.containsKey(jid)) {
+                                                messageList = messageListMap.get(jid);
+                                            }
+                                            BaseMessage baseMessage = new BaseMessage(message);
+                                            messageList.add(baseMessage);
+                                            messageListMap.put(jid, messageList);
+                                            baseRoster.setLastMessage(message.getBody());
+
+                                            messageStanzaListener.callback(baseMessage);
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -514,7 +546,7 @@ public class XmppPresenter implements IXmppPresenter {
                 String jid = XmppStringUtils.parseBareJid(entry.getUser());
                 userListMap.put(jid, new BaseRoster(entry.getUser(), presence));
             }
-            roster.setSubscriptionMode(Roster.SubscriptionMode.manual);
+            roster.setSubscriptionMode(Roster.SubscriptionMode.accept_all);
             if (baseRosterListener == null) {
                 baseRosterListener = new RosterListener() {
                     @Override
@@ -740,42 +772,6 @@ public class XmppPresenter implements IXmppPresenter {
                 members.add(occupant);
             }
             roomListMap.put(roomId, new BaseRoom(muc, members));
-        }
-    }
-
-    //Other implement
-
-    public void searchUser(String user) {
-        try {
-            Log.e(TAG, "searchUser: ");
-            UserSearchManager searchManager = new UserSearchManager(xmppConnector.getConnection());
-            Form searchForm = searchManager.getSearchForm("search." + xmppConnector.getConnection().getServiceName());
-            Form answerForm = searchForm.createAnswerForm();
-            answerForm.setAnswer("Username", true);
-            answerForm.setAnswer("search", user);
-            ReportedData data = searchManager.getSearchResults(answerForm, "search." + xmppConnector.getConnection().getServiceName());
-            if (data.getRows() != null) {
-                for (ReportedData.Row row : data.getRows()) {
-                    for (String value : row.getValues("jid")) {
-                        Log.e(TAG, "test: " + value);
-                    }
-                }
-            }
-        } catch (SmackException.NoResponseException | XMPPException.XMPPErrorException | SmackException.NotConnectedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void setupIncomingChat(XmppListener.IXmppCallback<Chat> chatObjectCallBack) {
-        if (isConnected()) {
-            if (xmppConnector.getConnection().isConnected()) {
-                ChatManager chatManager = ChatManager.getInstanceFor(xmppConnector.getConnection());
-                chatManager.addChatListener((chat, createdLocally) -> {
-                    if (!createdLocally) {
-                        chatObjectCallBack.callback(chat);
-                    }
-                });
-            }
         }
     }
 

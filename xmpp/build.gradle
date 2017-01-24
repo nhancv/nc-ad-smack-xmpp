@@ -48,4 +48,6 @@ dependencies {
     compile 'org.igniterealtime.smack:smack-im:4.1.9'
     compile 'org.igniterealtime.smack:smack-extensions:4.1.9'
     compile 'org.igniterealtime.smack:smack-experimental:4.1.9'
+    //Gson
+    compile 'com.google.code.gson:gson:2.4'
 }
