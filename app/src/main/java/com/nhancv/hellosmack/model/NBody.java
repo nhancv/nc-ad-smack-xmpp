@@ -12,7 +12,7 @@ import java.io.Serializable;
 public class NBody implements Serializable {
 
     @SerializedName("type")
-    private String type; //chat, file, image, notify
+    private String type; //text, file, image, notify
     @SerializedName("read")
     private boolean read;
     @SerializedName("seen")

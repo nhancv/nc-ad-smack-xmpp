@@ -236,7 +236,7 @@ public class ChatActivity extends AppCompatActivity {
         try {
             if (etInput.getText().length() > 0) {
                 Message message = new Message(address);
-                message.setBody(new NBody("chat", etInput.getText().toString()).toString());
+                message.setBody(new NBody("text", etInput.getText().toString()).toString());
                 DeliveryReceiptRequest.addTo(message);
                 Log.e(TAG, "btSendOnClick: " + message);
 
