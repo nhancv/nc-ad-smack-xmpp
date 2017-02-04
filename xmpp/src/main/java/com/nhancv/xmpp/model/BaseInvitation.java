@@ -1,4 +1,4 @@
-package com.nhancv.hellosmack.helper;
+package com.nhancv.xmpp.model;
 
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.packet.Message;
@@ -8,7 +8,7 @@ import org.jivesoftware.smackx.muc.MultiUserChat;
  * Created by nhancao on 12/21/16.
  */
 
-public class Invitation {
+public class BaseInvitation {
 
     private XMPPConnection conn;
     private MultiUserChat room;
@@ -17,7 +17,7 @@ public class Invitation {
     private String password;
     private Message message;
 
-    public Invitation(XMPPConnection conn, MultiUserChat room, String inviter, String reason, String password, Message message) {
+    public BaseInvitation(XMPPConnection conn, MultiUserChat room, String inviter, String reason, String password, Message message) {
         this.conn = conn;
         this.room = room;
         this.inviter = inviter;

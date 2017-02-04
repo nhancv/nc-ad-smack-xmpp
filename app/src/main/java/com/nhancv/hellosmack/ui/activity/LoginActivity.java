@@ -14,6 +14,7 @@ import android.widget.CheckBox;
 
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.helper.NUtil;
+import com.nhancv.hellosmack.helper.RxHelper;
 import com.nhancv.hellosmack.helper.XmppService_;
 import com.nhancv.npreferences.NPreferences;
 import com.nhancv.xmpp.XmppPresenter;
@@ -85,14 +86,14 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void signUp(String userName, String passWord) {
-        NUtil.aSyncTask(subscriber -> {
+        RxHelper.aSyncTask(subscriber -> {
             try {
                 XmppPresenter.getInstance().createUser(userName, passWord, new XmppListener.IXmppCreateListener() {
                     @Override
                     public void createSuccess() throws SmackException.NotConnectedException {
                         Log.e(TAG, "createSuccess: ");
                         XmppPresenter.getInstance().getXmppConnector().terminalConnection();
-                        NUtil.runOnUi(() -> {
+                        RxHelper.runOnUi(() -> {
                             btSigninOnClick();
                         });
                     }
@@ -105,7 +106,7 @@ public class LoginActivity extends AppCompatActivity {
                 });
             } catch (XMPPException | IOException | SmackException e) {
                 e.printStackTrace();
-                NUtil.runOnUi(() -> {
+                RxHelper.runOnUi(() -> {
                     showToast(e.getMessage());
                 });
             }
@@ -156,7 +157,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void login(String userName, String passWord) {
-        NUtil.aSyncTask(subscriber -> {
+        RxHelper.aSyncTask(subscriber -> {
             try {
                 XmppPresenter.getInstance().login(userName, passWord, new XmppListener.IXmppLoginListener() {
                     @Override
@@ -184,7 +185,7 @@ public class LoginActivity extends AppCompatActivity {
                 });
             } catch (XMPPException | IOException | SmackException e) {
                 e.printStackTrace();
-                NUtil.runOnUi(() -> {
+                RxHelper.runOnUi(() -> {
                     showToast(e.getMessage());
                 });
             }
@@ -197,7 +198,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     void showToast(String msg) {
-        NUtil.runOnUi(() -> {
+        RxHelper.runOnUi(() -> {
             NUtil.showToast(this, msg);
         });
     }

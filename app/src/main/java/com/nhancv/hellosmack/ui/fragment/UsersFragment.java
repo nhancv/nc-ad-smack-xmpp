@@ -15,6 +15,7 @@ import com.joanzapata.android.BaseAdapterHelper;
 import com.joanzapata.android.QuickAdapter;
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.helper.NUtil;
+import com.nhancv.hellosmack.helper.RxHelper;
 import com.nhancv.hellosmack.ui.activity.ChatActivity_;
 import com.nhancv.xmpp.XmppPresenter;
 import com.nhancv.xmpp.model.BaseRoster;
@@ -107,7 +108,7 @@ public class UsersFragment extends Fragment {
     }
 
     public void updateAdapter() {
-        NUtil.runOnUi(() -> {
+        RxHelper.runOnUi(() -> {
             if (adapter != null)
                 adapter.replaceAll(XmppPresenter.getInstance().getCurrentRosterList());
         });

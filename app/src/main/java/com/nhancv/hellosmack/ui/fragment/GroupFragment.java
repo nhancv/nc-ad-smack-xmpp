@@ -9,7 +9,7 @@ import android.widget.Toast;
 import com.joanzapata.android.BaseAdapterHelper;
 import com.joanzapata.android.QuickAdapter;
 import com.nhancv.hellosmack.R;
-import com.nhancv.hellosmack.helper.NUtil;
+import com.nhancv.hellosmack.helper.RxHelper;
 import com.nhancv.hellosmack.ui.activity.ChatRoomActivity_;
 import com.nhancv.xmpp.XmppPresenter;
 import com.nhancv.xmpp.listener.XmppListener;
@@ -80,7 +80,7 @@ public class GroupFragment extends Fragment {
 
     @Click(R.id.btCreateRoom)
     public void btCreateRoomOnClick() {
-        NUtil.aSyncTask(subscriber -> {
+        RxHelper.aSyncTask(subscriber -> {
             try {
                 XmppPresenter.getInstance().createGroupChat(
                         "Test group chat",
@@ -122,14 +122,14 @@ public class GroupFragment extends Fragment {
     }
 
     public void updateAdapter() {
-        NUtil.runOnUi(() -> {
+        RxHelper.runOnUi(() -> {
             if (adapter != null)
                 adapter.replaceAll(XmppPresenter.getInstance().getRoomList());
         });
     }
 
     public void showToast(String msg) {
-        NUtil.runOnUi(() -> {
+        RxHelper.runOnUi(() -> {
             Toast.makeText(getActivity(), msg, Toast.LENGTH_SHORT).show();
         });
     }

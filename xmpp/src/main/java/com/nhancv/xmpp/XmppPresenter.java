@@ -546,6 +546,7 @@ public class XmppPresenter implements IXmppPresenter {
                 String jid = XmppStringUtils.parseBareJid(entry.getUser());
                 userListMap.put(jid, new BaseRoster(entry.getUser(), presence));
             }
+
             roster.setSubscriptionMode(Roster.SubscriptionMode.accept_all);
             if (baseRosterListener == null) {
                 baseRosterListener = new RosterListener() {

@@ -11,6 +11,7 @@ import com.nhancv.hellosmack.bus.RosterBus;
 import com.nhancv.hellosmack.bus.XmppConnBus;
 import com.nhancv.xmpp.XmppPresenter;
 import com.nhancv.xmpp.listener.ErrorXmppConListener;
+import com.nhancv.xmpp.model.BaseInvitation;
 
 import org.androidannotations.annotations.EService;
 import org.androidannotations.annotations.SystemService;
@@ -78,7 +79,7 @@ public class XmppService extends IntentService {
 
         XmppPresenter.getInstance().getMultiUserChatManager()
                 .addInvitationListener((conn, room, inviter, reason, password, message) -> {
-                    postEvent(new InvitationBus(XmppService.class, 0, new Invitation(conn, room, inviter, reason, password, message)));
+                    postEvent(new InvitationBus(XmppService.class, 0, new BaseInvitation(conn, room, inviter, reason, password, message)));
                 });
     }
 

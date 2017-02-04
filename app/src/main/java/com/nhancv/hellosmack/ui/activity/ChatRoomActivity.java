@@ -18,6 +18,7 @@ import com.nhancv.hellosmack.bus.RosterBus;
 import com.nhancv.hellosmack.bus.XmppConnBus;
 import com.nhancv.hellosmack.helper.NTextChange;
 import com.nhancv.hellosmack.helper.NUtil;
+import com.nhancv.hellosmack.helper.RxHelper;
 import com.nhancv.hellosmack.helper.XmppService;
 import com.nhancv.hellosmack.ui.adapter.ChatRoomAdapter;
 import com.nhancv.xmpp.ChatRoomStateManager;
@@ -164,13 +165,13 @@ public class ChatRoomActivity extends AppCompatActivity {
                 if (roster != null && roster.getPresence().isAvailable()) {
                     String xml = message.toXML().toString();
                     if (XmppUtil.isMessage(xml)) {
-                        NUtil.runOnUi(() -> {
+                        RxHelper.runOnUi(() -> {
                             updateAdapter();
                             vListsItems.smoothScrollToPosition(adapter.getItemCount());
                         });
                     } else {
                         ChatState chatState = XmppUtil.getChatState(xml);
-                        NUtil.runOnUi(() -> {
+                        RxHelper.runOnUi(() -> {
                             if (chatState != null && chatState == ChatState.composing) {
                                 updateTyping(roster.getName() + " is typing ...");
                             } else {

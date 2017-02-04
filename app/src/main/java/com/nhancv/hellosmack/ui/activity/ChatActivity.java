@@ -18,6 +18,8 @@ import com.nhancv.hellosmack.bus.RosterBus;
 import com.nhancv.hellosmack.bus.XmppConnBus;
 import com.nhancv.hellosmack.helper.NTextChange;
 import com.nhancv.hellosmack.helper.NUtil;
+import com.nhancv.hellosmack.helper.RxHelper;
+import com.nhancv.hellosmack.helper.SntpClient;
 import com.nhancv.hellosmack.helper.XmppService;
 import com.nhancv.hellosmack.model.NBody;
 import com.nhancv.hellosmack.model.Notify;
@@ -43,6 +45,11 @@ import org.jivesoftware.smackx.receipts.DeliveryReceiptRequest;
 import org.jxmpp.util.XmppStringUtils;
 
 import java.util.List;
+
+import rx.Observable;
+import rx.Subscriber;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 
 /**
  * Created by nhancao on 9/7/16.
@@ -164,13 +171,13 @@ public class ChatActivity extends AppCompatActivity {
                 if (roster != null && roster.getPresence().isAvailable()) {
                     String xml = message.toXML().toString();
                     if (XmppUtil.isMessage(xml)) {
-                        NUtil.runOnUi(() -> {
+                        RxHelper.runOnUi(() -> {
                             updateAdapter();
                             vListsItems.smoothScrollToPosition(adapter.getItemCount());
                         });
                     } else {
                         ChatState chatState = XmppUtil.getChatState(xml);
-                        NUtil.runOnUi(() -> {
+                        RxHelper.runOnUi(() -> {
                             if (chatState != null && chatState == ChatState.composing) {
                                 updateTyping(roster.getName() + " is typing ...");
                             } else {
@@ -233,21 +240,26 @@ public class ChatActivity extends AppCompatActivity {
 
     @Click(R.id.btSend)
     void btSendOnClick() {
-        try {
-            if (etInput.getText().length() > 0) {
-                Message message = new Message(address);
-                message.setBody(new NBody("text", etInput.getText().toString()).toString());
-                DeliveryReceiptRequest.addTo(message);
-                Log.e(TAG, "btSendOnClick: " + message);
+        if (etInput.getText().length() > 0) {
+            getUTCTime(utcTimeStamp -> {
+                try {
+                    Message message = new Message(address);
+                    message.setBody(new NBody(XmppPresenter.getInstance().getCurrentUser(),
+                            address, "text",
+                            etInput.getText().toString(),
+                            utcTimeStamp).toString());
+                    DeliveryReceiptRequest.addTo(message);
+                    Log.e(TAG, "btSendOnClick: " + message);
 
-                chat.sendMessage(message);
+                    chat.sendMessage(message);
 
-                listBaseMessage.add(new BaseMessage(message, false));
-                updateAdapter();
-                vListsItems.smoothScrollToPosition(adapter.getItemCount());
-            }
-        } catch (SmackException.NotConnectedException e) {
-            e.printStackTrace();
+                    listBaseMessage.add(new BaseMessage(message, false));
+                    updateAdapter();
+                    vListsItems.smoothScrollToPosition(adapter.getItemCount());
+                } catch (SmackException.NotConnectedException e) {
+                    e.printStackTrace();
+                }
+            });
         }
     }
 
@@ -283,4 +295,28 @@ public class ChatActivity extends AppCompatActivity {
             tvTyping.setText(msg);
         }
     }
+
+    public void getUTCTime(UTCTime callback) {
+        Observable.defer(() -> Observable.create(new Observable.OnSubscribe<Long>() {
+            @Override
+            public void call(Subscriber<? super Long> subscriber) {
+                long utcTimeStamp = 0;
+                SntpClient sntpClient = new SntpClient();
+                if (sntpClient.requestTime("pool.ntp.org")) {
+                    utcTimeStamp = sntpClient.getNtpTime();
+                }
+                if (utcTimeStamp == 0) subscriber.onNext(System.currentTimeMillis());
+                else subscriber.onNext(utcTimeStamp);
+
+            }
+        }))
+                .subscribeOn(Schedulers.newThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(callback::getTime);
+    }
+
+    interface UTCTime {
+        void getTime(Long utcTimeStamp);
+    }
+
 }

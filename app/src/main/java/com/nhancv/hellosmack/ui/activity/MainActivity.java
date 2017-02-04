@@ -21,8 +21,7 @@ import com.nhancv.hellosmack.bus.InvitationBus;
 import com.nhancv.hellosmack.bus.MessageBus;
 import com.nhancv.hellosmack.bus.RosterBus;
 import com.nhancv.hellosmack.bus.XmppConnBus;
-import com.nhancv.hellosmack.helper.Invitation;
-import com.nhancv.hellosmack.helper.NUtil;
+import com.nhancv.hellosmack.helper.RxHelper;
 import com.nhancv.hellosmack.helper.XmppService;
 import com.nhancv.hellosmack.helper.XmppService_;
 import com.nhancv.hellosmack.ui.fragment.GroupFragment;
@@ -32,6 +31,7 @@ import com.nhancv.hellosmack.ui.fragment.UsersFragment_;
 import com.nhancv.npreferences.NPreferences;
 import com.nhancv.xmpp.XmppPresenter;
 import com.nhancv.xmpp.model.BaseError;
+import com.nhancv.xmpp.model.BaseInvitation;
 import com.nhancv.xmpp.model.BaseMessage;
 import com.nhancv.xmpp.model.BaseRoster;
 
@@ -77,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Subscribe
     public void invitationSubscribe(InvitationBus invitationBus) {
-        Invitation invitation = invitationBus.getData();
+        BaseInvitation invitation = invitationBus.getData();
         Log.d(TAG, "invitationSubscribe: Entered invitation handler... " + invitation.getMessage());
         BaseError error = XmppPresenter.getInstance().joinRoom(invitation.getRoom(), participantPresence -> {
             groupFragment.updateAdapter();
@@ -188,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void logout() {
-        NUtil.aSyncTask(subscriber -> {
+        RxHelper.aSyncTask(subscriber -> {
             //Clear preference
             NPreferences.getInstance().edit().clear();
             //Terminal current connection
@@ -210,7 +210,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void showToast(String msg) {
-        NUtil.runOnUi(() -> {
+        RxHelper.runOnUi(() -> {
             Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
         });
     }
