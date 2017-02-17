@@ -9,27 +9,19 @@ import org.jivesoftware.smack.packet.Message;
 public class BaseMessage {
 
     private Message message;
-    private boolean read;
-    private boolean delivered;
-    private boolean seen;
+    private ReadType readType;
+    private SentType sentType;
 
     public BaseMessage(Message message) {
-        this(message, false);
-    }
-
-    public BaseMessage(Message message, boolean read) {
         this.message = message;
-        this.read = read;
-        this.seen = false;
-        this.delivered = false;
+        this.readType = ReadType.UN_READ;
+        this.sentType = SentType.SENT;
     }
 
-    public boolean isSeen() {
-        return seen;
-    }
-
-    public void setSeen(boolean seen) {
-        this.seen = seen;
+    public BaseMessage(Message message, ReadType readType, SentType sentType) {
+        this.message = message;
+        this.readType = readType;
+        this.sentType = sentType;
     }
 
     public Message getMessage() {
@@ -40,19 +32,42 @@ public class BaseMessage {
         this.message = message;
     }
 
-    public boolean isRead() {
-        return read;
+    public ReadType getReadType() {
+        return readType;
     }
 
-    public void setRead(boolean read) {
-        this.read = read;
+    public void setReadType(ReadType readType) {
+        this.readType = readType;
+    }
+
+    public SentType getSentType() {
+        return sentType;
+    }
+
+    public void setSentType(SentType sentType) {
+        this.sentType = sentType;
+    }
+
+    public boolean isRead() {
+        return getReadType() == ReadType.READ;
     }
 
     public boolean isDelivered() {
-        return delivered;
+        return getSentType() == SentType.DELIVERED;
     }
 
-    public void setDelivered(boolean delivered) {
-        this.delivered = delivered;
+    public boolean isSeen() {
+        return getSentType() == SentType.SEEN;
+    }
+
+    public enum ReadType {
+        UN_READ,
+        READ
+    }
+
+    public enum SentType {
+        SENT,
+        DELIVERED,
+        SEEN
     }
 }

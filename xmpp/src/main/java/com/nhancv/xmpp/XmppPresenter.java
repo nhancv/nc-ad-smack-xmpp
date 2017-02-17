@@ -5,6 +5,7 @@ import android.util.Log;
 
 import com.google.gson.Gson;
 import com.nhancv.xmpp.listener.XmppListener;
+import com.nhancv.xmpp.model.BaseBody;
 import com.nhancv.xmpp.model.BaseError;
 import com.nhancv.xmpp.model.BaseMessage;
 import com.nhancv.xmpp.model.BaseNotify;
@@ -47,6 +48,7 @@ import org.jxmpp.util.XmppStringUtils;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,17 +60,43 @@ import java.util.Map;
 public class XmppPresenter implements IXmppPresenter {
     private static final String TAG = XmppPresenter.class.getSimpleName();
 
-    private static XmppPresenter instance = new XmppPresenter();
-    private Map<String, BaseRoster> userListMap = new LinkedHashMap<>();
-    private Map<String, List<BaseMessage>> messageListMap = new LinkedHashMap<>();
-    private Map<String, BaseRoom> roomListMap = new LinkedHashMap<>();
+    private static XmppPresenter instance;
+    private static IXmppConfig xmppConfig;
+    private Map<String, BaseRoster> userListMap;
+    private Map<String, List<BaseMessage>> messageListMap;
+    private Map<String, BaseRoom> roomListMap;
 
     private IXmppConnector xmppConnector;
     private RosterListener baseRosterListener;
     private OfflineMessageManager offlineMessageManager;
 
+    public XmppPresenter() {
+        this.roomListMap = new LinkedHashMap<>();
+        this.messageListMap = new LinkedHashMap<>();
+        this.userListMap = new LinkedHashMap<>();
+    }
+
     public static XmppPresenter getInstance() {
+        if (instance == null) instance = new XmppPresenter();
         return instance;
+    }
+
+    public static void resetInstance() {
+        if (instance != null) {
+            instance.logout();
+            instance.userListMap = null;
+            instance.messageListMap = null;
+            instance.roomListMap = null;
+
+            instance.xmppConnector = null;
+            instance.baseRosterListener = null;
+            instance.offlineMessageManager = null;
+            instance = null;
+        }
+    }
+
+    public static void setXmppConfig(IXmppConfig iXmppConfig) {
+        xmppConfig = iXmppConfig;
     }
 
     @Override
@@ -80,7 +108,7 @@ public class XmppPresenter implements IXmppPresenter {
     public void login(String userJid, String passwod, XmppListener.IXmppLoginListener loginConnectionListener)
             throws IOException, SmackException, XMPPException {
         IXmppCredential xmppCredential = new XmppCredential(userJid, passwod);
-        xmppConnector = new XmppConnector();
+        xmppConnector = new XmppConnector(xmppConfig);
         xmppConnector.setupLoginConnection(xmppCredential, loginConnectionListener);
         xmppConnector.createConnection();
     }
@@ -88,7 +116,7 @@ public class XmppPresenter implements IXmppPresenter {
     @Override
     public void createUser(String userJid, String password, XmppListener.IXmppCreateListener createConnectionListener)
             throws XMPPException, IOException, SmackException {
-        xmppConnector = new XmppConnector();
+        xmppConnector = new XmppConnector(xmppConfig);
         xmppConnector.setupCreateConnection(new XmppListener.IXmppConnListener() {
             @Override
             public void success() {
@@ -123,10 +151,16 @@ public class XmppPresenter implements IXmppPresenter {
 
     @Override
     public void logout() {
-        userListMap.clear();
-        messageListMap.clear();
-        roomListMap.clear();
+        logout(true);
+    }
 
+    @Override
+    public void logout(boolean clearCache) {
+        if (clearCache) {
+            userListMap.clear();
+            messageListMap.clear();
+            roomListMap.clear();
+        }
         if (isConnected()) {
             try {
                 xmppConnector.terminalConnection();
@@ -175,7 +209,7 @@ public class XmppPresenter implements IXmppPresenter {
 
     @Override
     public boolean isConnected() {
-        return xmppConnector != null && xmppConnector.getConnection().isConnected();
+        return xmppConnector != null && xmppConnector.getConnection() != null && xmppConnector.getConnection().isConnected();
     }
 
     @Override
@@ -190,32 +224,36 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
-    public void sendInviteRequest(String userJid) {
+    public void sendInviteRequest(String rosterJid) {
         if (isConnected()) {
             Presence subscribe = new Presence(Presence.Type.subscribe);
-            subscribe.setTo(userJid);
+            subscribe.setTo(rosterJid);
             sendStanza(subscribe);
         }
     }
 
     @Override
-    public void acceptInviteRequest(String userJid) {
+    public void acceptInviteRequest(String rosterJid) {
         if (isConnected()) {
+            //Accept subscribe request
             Presence subscribe = new Presence(Presence.Type.subscribed);
-            subscribe.setTo(userJid);
+            subscribe.setTo(rosterJid);
             sendStanza(subscribe);
-
+            //Sent subscribe
             subscribe.setType(Presence.Type.subscribe);
             sendStanza(subscribe);
+            //Update presence
+            setAvailablePresence();
         }
     }
 
     @Override
-    public void sendUnFriendRequest(String userJid) {
+    public void sendUnFriendRequest(String rosterJid) {
         if (isConnected()) {
+            //Send unfriend request
             RosterPacket subscribe = new RosterPacket();
             subscribe.setType(IQ.Type.set);
-            RosterPacket.Item item = new RosterPacket.Item(userJid, null);
+            RosterPacket.Item item = new RosterPacket.Item(rosterJid, null);
             item.setItemType(RosterPacket.ItemType.remove);
             subscribe.addRosterItem(item);
             sendStanza(subscribe);
@@ -223,12 +261,24 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
-    public void acceptUnFriendRequest(String userJid) {
+    public void acceptUnFriendRequest(String rosterJid) {
         if (isConnected()) {
+            //Update presence
+            setUnavailablePresence();
+            //Accept unsubscribed
             Presence subscribe = new Presence(Presence.Type.unsubscribed);
-            subscribe.setTo(userJid);
+            subscribe.setTo(rosterJid);
             sendStanza(subscribe);
+            //Sent unsubscribe
+            subscribe.setType(Presence.Type.unsubscribe);
+            sendStanza(subscribe);
+
         }
+    }
+
+    @Override
+    public boolean isFriends(String rosterJid) {
+        return (isConnected() && getRoster(rosterJid) != null);
     }
 
     @Override
@@ -260,7 +310,6 @@ public class XmppPresenter implements IXmppPresenter {
                 if (packet instanceof Message) {
                     Message message = (Message) packet;
                     Log.e(TAG, "addMessageStanzaListener: " + message.toXML().toString());
-
                     if (message.getFrom() != null && XmppUtil.isGroupMessage(message.toXML().toString())) {
                         String roomId = XmppStringUtils.parseBareJid(message.getFrom());
                         List<BaseMessage> messageList = new ArrayList<>();
@@ -287,13 +336,14 @@ public class XmppPresenter implements IXmppPresenter {
                                     List<BaseMessage> baseMessages = messageListMap.get(jid);
                                     for (BaseMessage baseMessage : baseMessages) {
                                         if (baseMessage.getMessage().getStanzaId().equals(parseForwardedMessage.getStanzaId())) {
-                                            baseMessage.setDelivered(true);
+                                            baseMessage.setSentType(BaseMessage.SentType.DELIVERED);
 
                                             messageStanzaListener.callback(baseMessage);
                                             break;
                                         }
                                     }
                                 }
+
                             } else if (XmppUtil.isMessage(parseForwardedMessage.toXML().toString())) {
                                 String jid = XmppStringUtils.parseBareJid(parseForwardedMessage.getTo());
 
@@ -301,7 +351,7 @@ public class XmppPresenter implements IXmppPresenter {
                                 if (messageListMap.containsKey(jid)) {
                                     messageList = messageListMap.get(jid);
                                 }
-                                BaseMessage baseMessage = new BaseMessage(parseForwardedMessage, false);
+                                BaseMessage baseMessage = new BaseMessage(parseForwardedMessage);
                                 messageList.add(baseMessage);
                                 messageListMap.put(jid, messageList);
 
@@ -310,56 +360,41 @@ public class XmppPresenter implements IXmppPresenter {
                         } else {
                             String xml = message.toXML().toString();
                             if (XmppUtil.isMessage(xml)) {
+                                String jid = XmppStringUtils.parseBareJid(message.getFrom());
 
                                 if (XmppUtil.isNotify(message.getBody())) {
 
                                     BaseNotify notify = new Gson().fromJson(message.getBody(), BaseNotify.class);
                                     String mid = notify.getContent().replace("-mid-", "").replace("-end-", "");
-                                    for (BaseRoster baseRoster : userListMap.values()) {
-                                        String jid = XmppStringUtils.parseBareJid(baseRoster.getName());
+                                    //Update seen status
+                                    List<BaseMessage> messageList = new ArrayList<>();
+                                    if (messageListMap.containsKey(jid)) {
+                                        messageList = messageListMap.get(jid);
+                                    }
 
-                                        if ((baseRoster.getPresence().isAvailable() || XmppUtil.isOfflineStorage(xml))
-                                                && message.getFrom() != null && message.getFrom().contains(jid)
-                                                && XmppUtil.isMessage(xml)) {
-                                            List<BaseMessage> messageList = new ArrayList<>();
-                                            if (messageListMap.containsKey(jid)) {
-                                                messageList = messageListMap.get(jid);
-                                            }
+                                    for (BaseMessage baseMessage : messageList) {
+                                        if (baseMessage.getMessage().getStanzaId().equals(mid)) {
+                                            baseMessage.setSentType(BaseMessage.SentType.SEEN);
 
-                                            for (BaseMessage baseMessage : messageList) {
-                                                if (baseMessage.getMessage().getStanzaId().equals(mid)) {
-                                                    baseMessage.setSeen(true);
-
-                                                    messageListMap.put(jid, messageList);
-                                                    messageStanzaListener.callback(baseMessage);
-                                                    break;
-                                                }
-                                            }
+                                            messageListMap.put(jid, messageList);
+                                            messageStanzaListener.callback(baseMessage);
                                             break;
                                         }
                                     }
 
                                 } else {
 
-                                    for (BaseRoster baseRoster : userListMap.values()) {
-                                        String jid = XmppStringUtils.parseBareJid(baseRoster.getName());
-
-                                        if ((baseRoster.getPresence().isAvailable() || XmppUtil.isOfflineStorage(xml))
-                                                && message.getFrom() != null && message.getFrom().contains(jid)
-                                                && XmppUtil.isMessage(xml)) {
-                                            List<BaseMessage> messageList = new ArrayList<>();
-                                            if (messageListMap.containsKey(jid)) {
-                                                messageList = messageListMap.get(jid);
-                                            }
-                                            BaseMessage baseMessage = new BaseMessage(message);
-                                            messageList.add(baseMessage);
-                                            messageListMap.put(jid, messageList);
-                                            baseRoster.setLastMessage(message.getBody());
-
-                                            messageStanzaListener.callback(baseMessage);
-                                            break;
-                                        }
+                                    //Push message to list
+                                    List<BaseMessage> messageList = new ArrayList<>();
+                                    if (messageListMap.containsKey(jid)) {
+                                        messageList = messageListMap.get(jid);
                                     }
+                                    BaseMessage baseMessage = new BaseMessage(message);
+                                    messageList.add(baseMessage);
+                                    messageListMap.put(jid, messageList);
+
+                                    messageStanzaListener.callback(baseMessage);
+
                                 }
                             }
                         }
@@ -374,7 +409,7 @@ public class XmppPresenter implements IXmppPresenter {
                     List<BaseMessage> baseMessages = messageListMap.get(shortJid);
                     for (BaseMessage baseMessage : baseMessages) {
                         if (baseMessage.getMessage().getStanzaId().equals(receiptId)) {
-                            baseMessage.setDelivered(true);
+                            baseMessage.setSentType(BaseMessage.SentType.DELIVERED);
 
                             messageStanzaListener.callback(baseMessage);
                             break;
@@ -503,6 +538,43 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
+    public void clearMessageList(String jid) {
+        messageListMap.put(jid, new ArrayList<>());
+    }
+
+    @Override
+    public void updateMessageList(String jid, List<BaseMessage> messageList) {
+        List<BaseMessage> msgList = getMessageList(jid);
+        if (msgList == null) {
+            msgList = new ArrayList<>();
+        } else {
+            Collections.sort(msgList, (o1, o2) -> {
+                BaseBody baseBody1 = BaseBody.fromJson(o1.getMessage().getBody());
+                BaseBody baseBody2 = BaseBody.fromJson(o2.getMessage().getBody());
+                return (int) (baseBody1.getTimestamp() - baseBody2.getTimestamp());
+            });
+        }
+        if (messageList == null || messageList.isEmpty()) return;
+
+        LinkedHashMap<String, BaseMessage> map = new LinkedHashMap<>();
+        for (BaseMessage baseMessage : messageList) {
+            map.put(baseMessage.getMessage().getStanzaId(), baseMessage);
+        }
+        for (BaseMessage baseMessage : msgList) {
+            map.put(baseMessage.getMessage().getStanzaId(), baseMessage);
+        }
+
+        msgList.clear();
+        msgList.addAll(map.values());
+        Collections.sort(msgList, (o1, o2) -> {
+            BaseBody baseBody1 = BaseBody.fromJson(o1.getMessage().getBody());
+            BaseBody baseBody2 = BaseBody.fromJson(o2.getMessage().getBody());
+            return (int) (baseBody1.getTimestamp() - baseBody2.getTimestamp());
+        });
+        messageListMap.put(jid, msgList);
+    }
+
+    @Override
     public List<BaseRoom> getRoomList() {
         return new ArrayList<>(roomListMap.values());
     }
@@ -542,8 +614,11 @@ public class XmppPresenter implements IXmppPresenter {
             Presence presence;
 
             for (RosterEntry entry : entries) {
-                presence = roster.getPresence(entry.getUser());
                 String jid = XmppStringUtils.parseBareJid(entry.getUser());
+                presence = roster.getPresence(entry.getUser());
+                if (presence.getType() == Presence.Type.unavailable) {
+                    sendInviteRequest(jid);
+                }
                 userListMap.put(jid, new BaseRoster(entry.getUser(), presence));
             }
 
@@ -568,7 +643,7 @@ public class XmppPresenter implements IXmppPresenter {
                     public void entriesUpdated(Collection<String> addresses) {
                         for (String item : addresses) {
                             for (BaseRoster baseRoster : userListMap.values()) {
-                                String jid = XmppStringUtils.parseBareJid(baseRoster.getName());
+                                String jid = XmppStringUtils.parseBareJid(baseRoster.getJid());
                                 if (item.contains(jid)) {
                                     Presence presence = roster.getPresence(item);
                                     baseRoster.setPresence(presence);
@@ -586,7 +661,7 @@ public class XmppPresenter implements IXmppPresenter {
                     public void entriesDeleted(Collection<String> addresses) {
                         for (String item : addresses) {
                             for (BaseRoster baseRoster : userListMap.values()) {
-                                String jid = XmppStringUtils.parseBareJid(baseRoster.getName());
+                                String jid = XmppStringUtils.parseBareJid(baseRoster.getJid());
                                 if (item.contains(jid)) {
                                     userListMap.values().remove(baseRoster);
                                     if (updateListener != null)
@@ -602,7 +677,7 @@ public class XmppPresenter implements IXmppPresenter {
                     @Override
                     public void presenceChanged(Presence presence) {
                         for (BaseRoster baseRoster : userListMap.values()) {
-                            String jid = XmppStringUtils.parseBareJid(baseRoster.getName());
+                            String jid = XmppStringUtils.parseBareJid(baseRoster.getJid());
                             if (presence.getFrom().contains(jid)) {
                                 baseRoster.setPresence(presence);
                                 if (updateListener != null) updateListener.callback(baseRoster);
@@ -640,6 +715,21 @@ public class XmppPresenter implements IXmppPresenter {
             sendStanza(p);
         }
     }
+
+    @Override
+    public void setAvailablePresence() {
+        if (isConnected()) {
+            sendStanza(new Presence(Presence.Type.available));
+        }
+    }
+
+    @Override
+    public void setUnavailablePresence() {
+        if (isConnected()) {
+            sendStanza(new Presence(Presence.Type.unavailable));
+        }
+    }
+
 
     @Override
     public MultiUserChat createGroupChat(String groupName, String description, String

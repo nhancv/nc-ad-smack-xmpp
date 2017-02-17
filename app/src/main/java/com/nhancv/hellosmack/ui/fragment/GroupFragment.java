@@ -100,7 +100,7 @@ public class GroupFragment extends Fragment {
 
                                 for (BaseRoster user : XmppPresenter.getInstance().getCurrentRosterList()) {
                                     try {
-                                        chatRoom.invite(user.getName(), "hi you");
+                                        chatRoom.invite(user.getJid(), "hi you");
                                     } catch (SmackException.NotConnectedException e) {
                                         e.printStackTrace();
                                     }

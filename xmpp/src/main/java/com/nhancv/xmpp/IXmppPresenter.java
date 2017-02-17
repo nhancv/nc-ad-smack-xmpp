@@ -45,6 +45,8 @@ public interface IXmppPresenter {
 
     void logout();
 
+    void logout(boolean clearCache);
+
     void connectionListenerRegister(ConnectionListener connectionListener);
 
     void enableCarbonMessage();
@@ -58,15 +60,21 @@ public interface IXmppPresenter {
     //Invite/request
     void updatePresence(Presence.Mode presenceMode, String status);
 
+    void setAvailablePresence();
+
+    void setUnavailablePresence();
+
     void sendStanza(@NonNull Stanza packet);
 
-    void sendInviteRequest(String userJid);
+    void sendInviteRequest(String rosterJid);
 
-    void acceptInviteRequest(String userJid);
+    void acceptInviteRequest(String rosterJid);
 
-    void sendUnFriendRequest(String userJid);
+    void sendUnFriendRequest(String rosterJid);
 
-    void acceptUnFriendRequest(String userJid);
+    void acceptUnFriendRequest(String rosterJid);
+
+    boolean isFriends(String rosterJid);
 
     //Listener
     void removeAsyncStanzaListener(StanzaListener listener);
@@ -112,6 +120,10 @@ public interface IXmppPresenter {
     ChatRoomStateManager getChatRoomStateManager();
 
     List<BaseMessage> getMessageList(String jid);
+
+    void clearMessageList(String jid);
+
+    void updateMessageList(String jid, List<BaseMessage> messageList);
 
     List<BaseRoom> getRoomList();
 

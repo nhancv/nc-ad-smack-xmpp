@@ -9,9 +9,9 @@ import android.widget.TextView;
 
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.helper.NUtil;
-import com.nhancv.hellosmack.model.NBody;
 import com.nhancv.xmpp.XmppPresenter;
 import com.nhancv.xmpp.XmppUtil;
+import com.nhancv.xmpp.model.BaseBody;
 import com.nhancv.xmpp.model.BaseMessage;
 
 import org.jxmpp.util.XmppStringUtils;
@@ -48,14 +48,14 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ListsH
     @Override
     public void onBindViewHolder(ChatRoomAdapter.ListsHolder holder, int position) {
         BaseMessage baseMessage = listsItems.get(position);
-        NBody body = NBody.parseFromBody(baseMessage.getMessage().getBody());
+        BaseBody body = BaseBody.fromJson(baseMessage.getMessage().getBody());
         boolean isLeft;
         String status;
         if (XmppUtil.isGroupMessage(baseMessage.getMessage().toXML().toString())) {
             String to = XmppStringUtils.parseResource(baseMessage.getMessage().getFrom());
             isLeft = XmppStringUtils.parseBareJid(to).contains(
                     parseBareJid(XmppPresenter.getInstance().getCurrentUser()));
-            if (isLeft) baseMessage.setRead(true);
+            if (isLeft) baseMessage.setReadType(BaseMessage.ReadType.READ);
 
             //from format = <room>@<servervice name>/<user chat>
             status = XmppStringUtils.parseResource(baseMessage.getMessage().getFrom());
@@ -81,7 +81,7 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ListsH
         } else {
 
             holder.tvTimeRight.setText(status);
-            holder.tvMsgRight.setText(NBody.parseFromBody(baseMessage.getMessage().getBody()).getContent());
+            holder.tvMsgRight.setText(BaseBody.fromJson(baseMessage.getMessage().getBody()).getContent());
             if (!baseMessage.isRead()) {
                 holder.vItemLeft.setBackgroundResource(R.drawable.chat_right_unread);
             } else {

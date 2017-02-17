@@ -1,4 +1,4 @@
-package com.nhancv.hellosmack.model;
+package com.nhancv.xmpp.model;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
@@ -9,7 +9,7 @@ import java.io.Serializable;
  * Created by nhancao on 1/18/17.
  */
 
-public class NBody implements Serializable {
+public class BaseBody implements Serializable {
 
     @SerializedName("type")
     private String type; //text, image, notify
@@ -25,8 +25,11 @@ public class NBody implements Serializable {
     private String from;
     @SerializedName("to")
     private String to;
+    @SerializedName("id")
+    private String id;
 
-    public NBody(String from, String to, String type, String content, long timestamp) {
+
+    public BaseBody(String from, String to, String type, String content, long timestamp, String id) {
         this.type = type;
         this.read = false;
         this.seen = false;
@@ -34,10 +37,15 @@ public class NBody implements Serializable {
         this.timestamp = timestamp;
         this.from = from;
         this.to = to;
+        this.id = id;
     }
 
-    public static NBody parseFromBody(String body) {
-        return new Gson().fromJson(body, NBody.class);
+    public static BaseBody from(BaseMessage baseMessage) {
+        return fromJson(baseMessage.getMessage().getBody());
+    }
+
+    public static BaseBody fromJson(String body) {
+        return new Gson().fromJson(body, BaseBody.class);
     }
 
     @Override
@@ -71,5 +79,9 @@ public class NBody implements Serializable {
 
     public String getTo() {
         return to;
+    }
+
+    public String getId() {
+        return id;
     }
 }

@@ -1,5 +1,6 @@
 package com.nhancv.hellosmack.bus;
 
+
 import com.nhancv.xmpp.model.BaseInvitation;
 
 /**
@@ -13,4 +14,3 @@ public class InvitationBus extends BaseBus<BaseInvitation> {
     }
 
 }
-

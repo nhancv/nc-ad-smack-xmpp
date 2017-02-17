@@ -57,6 +57,9 @@ dependencies {
     compile 'io.reactivex:rxjava:1.1.5'
     compile 'com.google.code.gson:gson:2.4'
     compile 'com.github.nhancv:nc-android-npreferences:v1.1'
+    //Images
+    compile 'com.github.bumptech.glide:glide:3.7.0'
+    compile 'de.hdodenhof:circleimageview:2.1.0'
 
     compile project(':xmpp')
 }

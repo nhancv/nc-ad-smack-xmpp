@@ -6,22 +6,18 @@ package com.nhancv.xmpp;
 
 public class XmppConfig implements IXmppConfig {
 
-    private static final String HOST = "local.beesightsoft.com";
-    private static final String DOMAIN = "local.beesightsoft.com";
-    private static final int PORT = 6001;
-
     @Override
     public String getHost() {
-        return HOST;
+        return "jabber.to";
     }
 
     @Override
     public String getDomain() {
-        return DOMAIN;
+        return "jabber.to";
     }
 
     @Override
     public Integer getPort() {
-        return PORT;
+        return 5269;
     }
 }

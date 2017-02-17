@@ -33,8 +33,13 @@ public class XmppConnector implements IXmppConnector {
     private AuthXmppConListener connectionListener;
 
     public XmppConnector() {
-        xmppConfig = new XmppConfig();
-        connectionListener = new XmppConnectionListener();
+        this(new XmppConfig());
+    }
+
+    public XmppConnector(IXmppConfig xmppConfig) {
+        if (xmppConfig == null) xmppConfig = new XmppConfig();
+        this.xmppConfig = xmppConfig;
+        this.connectionListener = new XmppConnectionListener();
     }
 
     @Override

@@ -21,11 +21,12 @@ import com.nhancv.hellosmack.helper.NUtil;
 import com.nhancv.hellosmack.helper.RxHelper;
 import com.nhancv.hellosmack.helper.SntpClient;
 import com.nhancv.hellosmack.helper.XmppService;
-import com.nhancv.hellosmack.model.NBody;
+import com.nhancv.hellosmack.model.NType;
 import com.nhancv.hellosmack.model.Notify;
 import com.nhancv.hellosmack.ui.adapter.ChatAdapter;
 import com.nhancv.xmpp.XmppPresenter;
 import com.nhancv.xmpp.XmppUtil;
+import com.nhancv.xmpp.model.BaseBody;
 import com.nhancv.xmpp.model.BaseMessage;
 import com.nhancv.xmpp.model.BaseRoster;
 
@@ -45,6 +46,7 @@ import org.jivesoftware.smackx.receipts.DeliveryReceiptRequest;
 import org.jxmpp.util.XmppStringUtils;
 
 import java.util.List;
+import java.util.UUID;
 
 import rx.Observable;
 import rx.Subscriber;
@@ -69,12 +71,15 @@ public class ChatActivity extends AppCompatActivity {
     TextView tvTyping;
 
     @Extra
-    String address;
+    String addressJid;
+
     private Chat chat;
     private ChatAdapter adapter;
     private StanzaListener chatSessionListener;
     private ChatStateManager chatStateManager;
     private List<BaseMessage> listBaseMessage;
+    private boolean scrollingFlag;
+    
     private NTextChange editTextAutoChange = new NTextChange(new NTextChange.TextListener() {
         @Override
         public void after(Editable editable) {
@@ -121,13 +126,14 @@ public class ChatActivity extends AppCompatActivity {
         BaseMessage baseMessage = (BaseMessage) messageBus.getData();
         if (baseMessage != null) {
             updateAdapter();
+            scrollToBottom();
         }
     }
 
     @Subscribe
     public void rosterSubscribe(RosterBus rosterBus) {
         BaseRoster baseRoster = ((BaseRoster) rosterBus.getData());
-        String status = (baseRoster != null ? baseRoster.getName() + " -> " + baseRoster.getPresence().getType() : null);
+        String status = (baseRoster != null ? baseRoster.getJid() + " -> " + baseRoster.getPresence().getType() : null);
         if (status != null) {
             Log.e(TAG, "rosterSubscribe: " + status);
             NUtil.showToast(this, "roster's status changed: " + status);
@@ -162,7 +168,7 @@ public class ChatActivity extends AppCompatActivity {
         vListsItems.setAdapter(adapter);
 
         chatStateManager = XmppPresenter.getInstance().getChatStateManager();
-        listBaseMessage = XmppPresenter.getInstance().getMessageList(address);
+        listBaseMessage = XmppPresenter.getInstance().getMessageList(addressJid);
         adapter.setListsItems(listBaseMessage);
         chatSessionListener = packet -> {
             if (packet instanceof Message) {
@@ -179,7 +185,7 @@ public class ChatActivity extends AppCompatActivity {
                         ChatState chatState = XmppUtil.getChatState(xml);
                         RxHelper.runOnUi(() -> {
                             if (chatState != null && chatState == ChatState.composing) {
-                                updateTyping(roster.getName() + " is typing ...");
+                                updateTyping(roster.getJid() + " is typing ...");
                             } else {
                                 updateTyping(null);
                             }
@@ -189,10 +195,10 @@ public class ChatActivity extends AppCompatActivity {
             }
         };
 
-        chat = XmppPresenter.getInstance().openChatSession(chatSessionListener, address);
+        chat = XmppPresenter.getInstance().openChatSession(chatSessionListener, addressJid);
 
         if (chat != null) {
-            setupToolbar(vToolbar, XmppStringUtils.parseBareJid(address));
+            setupToolbar(vToolbar, XmppStringUtils.parseBareJid(addressJid));
         }
         etInput.addTextChangedListener(editTextAutoChange);
 
@@ -204,20 +210,21 @@ public class ChatActivity extends AppCompatActivity {
                     int bot = llm.findLastCompletelyVisibleItemPosition();
                     for (int i = top; i <= bot; i++) {
                         try {
-                            if (!listBaseMessage.get(i).isRead()) {
-                                Message message = new Message(address);
+                            BaseMessage msg = listBaseMessage.get(i);
+                            if (!msg.isRead()) {
+                                Message message = new Message(addressJid);
                                 String content = String.format("-mid-%1$s-end-",
-                                        listBaseMessage.get(i).getMessage().getStanzaId());
+                                        msg.getMessage().getStanzaId());
                                 message.setBody(new Notify(content).toString());
                                 chat.sendMessage(message);
-                                Log.e(TAG, "onScrollStateChanged: send " + i + "-" + message.getBody());
-                                listBaseMessage.get(i).setRead(true);
+                                msg.setReadType(BaseMessage.ReadType.READ);
                             }
 
                         } catch (Exception ignored) {
                         }
                     }
                     updateAdapter();
+                    scrollingFlag = false;
                 }
             }
         });
@@ -241,25 +248,40 @@ public class ChatActivity extends AppCompatActivity {
     @Click(R.id.btSend)
     void btSendOnClick() {
         if (etInput.getText().length() > 0) {
-            getUTCTime(utcTimeStamp -> {
-                try {
-                    Message message = new Message(address);
-                    message.setBody(new NBody(XmppPresenter.getInstance().getCurrentUser(),
-                            address, "text",
-                            etInput.getText().toString(),
-                            utcTimeStamp).toString());
-                    DeliveryReceiptRequest.addTo(message);
-                    Log.e(TAG, "btSendOnClick: " + message);
+            if (chat != null) {
+                String id = UUID.randomUUID().toString();
+                String content = etInput.getText().toString();
+                NType type = NType.text;
+                getUTCTime(utcTimeStamp -> {
+                    try {
+                        //parse data
+                        BaseBody body = new BaseBody(
+                                XmppStringUtils.parseLocalpart(XmppPresenter.getInstance().getCurrentUser()),
+                                XmppStringUtils.parseLocalpart(addressJid),
+                                type.name(),
+                                content,
+                                utcTimeStamp,
+                                id);
+                        Message message = new Message(addressJid);
+                        message.setStanzaId(id);
+                        message.setBody(body.toString());
 
-                    chat.sendMessage(message);
+                        DeliveryReceiptRequest.addTo(message);
+                        chat.sendMessage(message);
 
-                    listBaseMessage.add(new BaseMessage(message, false));
-                    updateAdapter();
-                    vListsItems.smoothScrollToPosition(adapter.getItemCount());
-                } catch (SmackException.NotConnectedException e) {
-                    e.printStackTrace();
-                }
-            });
+                        //add to list
+                        BaseMessage baseMessage = new BaseMessage(message);
+                        listBaseMessage.add(baseMessage);
+
+                        //scroll to bottom
+                        scrollingFlag = true;
+                        vListsItems.smoothScrollToPosition(adapter.getItemCount());
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
+            }
         }
     }
 
@@ -294,6 +316,12 @@ public class ChatActivity extends AppCompatActivity {
             tvTyping.setVisibility(View.VISIBLE);
             tvTyping.setText(msg);
         }
+    }
+
+    public void scrollToBottom() {
+        //scroll to bottom
+        scrollingFlag = true;
+        vListsItems.smoothScrollToPosition(adapter.getItemCount());
     }
 
     public void getUTCTime(UTCTime callback) {

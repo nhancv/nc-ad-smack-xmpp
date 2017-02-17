@@ -6,21 +6,20 @@ import org.jivesoftware.smack.packet.Presence;
  * Created by nhancao on 9/6/16.
  */
 public class BaseRoster {
-    private String name;
+    private String jid;
     private Presence presence;
-    private String lastMessage;
 
-    public BaseRoster(String name, Presence presence) {
-        this.name = name;
+    public BaseRoster(String jid, Presence presence) {
+        this.jid = jid;
         this.presence = presence;
     }
 
-    public String getName() {
-        return name;
+    public String getJid() {
+        return jid;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setJid(String name) {
+        this.jid = name;
     }
 
     public Presence getPresence() {
@@ -29,14 +28,6 @@ public class BaseRoster {
 
     public void setPresence(Presence presence) {
         this.presence = presence;
-    }
-
-    public String getLastMessage() {
-        return lastMessage;
-    }
-
-    public void setLastMessage(String lastMessage) {
-        this.lastMessage = lastMessage;
     }
 
 }

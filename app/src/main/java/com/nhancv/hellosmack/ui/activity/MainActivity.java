@@ -118,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
     @Subscribe
     public void rosterSubscribe(RosterBus rosterBus) {
         BaseRoster baseRoster = ((BaseRoster) rosterBus.getData());
-        String status = (baseRoster != null ? baseRoster.getName() + " -> " + baseRoster.getPresence().getType() : null);
+        String status = (baseRoster != null ? baseRoster.getJid() + " -> " + baseRoster.getPresence().getType() : null);
         if (status != null) {
             Log.d(TAG, "rosterSubscribe: " + status);
         }

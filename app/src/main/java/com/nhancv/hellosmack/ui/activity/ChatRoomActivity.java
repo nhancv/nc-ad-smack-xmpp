@@ -118,7 +118,7 @@ public class ChatRoomActivity extends AppCompatActivity {
     @Subscribe
     public void rosterSubscribe(RosterBus rosterBus) {
         BaseRoster baseRoster = ((BaseRoster) rosterBus.getData());
-        String status = (baseRoster != null ? baseRoster.getName() + " -> " + baseRoster.getPresence().getType() : null);
+        String status = (baseRoster != null ? baseRoster.getJid() + " -> " + baseRoster.getPresence().getType() : null);
         if (status != null) {
             Log.e(TAG, "rosterSubscribe: " + status);
             NUtil.showToast(this, "roster's status changed: " + status);
@@ -173,7 +173,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                         ChatState chatState = XmppUtil.getChatState(xml);
                         RxHelper.runOnUi(() -> {
                             if (chatState != null && chatState == ChatState.composing) {
-                                updateTyping(roster.getName() + " is typing ...");
+                                updateTyping(roster.getJid() + " is typing ...");
                             } else {
                                 updateTyping(null);
                             }
@@ -193,7 +193,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                     int bot = llm.findLastCompletelyVisibleItemPosition();
                     for (int i = top; i <= bot; i++) {
                         try {
-                            listBaseMessage.get(i).setRead(true);
+                            listBaseMessage.get(i).setReadType(BaseMessage.ReadType.READ);
                         } catch (Exception ignored) {
                         }
                     }

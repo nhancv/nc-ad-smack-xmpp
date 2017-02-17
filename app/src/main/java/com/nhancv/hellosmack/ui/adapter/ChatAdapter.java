@@ -9,8 +9,8 @@ import android.widget.TextView;
 
 import com.nhancv.hellosmack.R;
 import com.nhancv.hellosmack.helper.NUtil;
-import com.nhancv.hellosmack.model.NBody;
 import com.nhancv.xmpp.XmppPresenter;
+import com.nhancv.xmpp.model.BaseBody;
 import com.nhancv.xmpp.model.BaseMessage;
 
 import org.jxmpp.util.XmppStringUtils;
@@ -47,7 +47,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ListsHolder> {
     @Override
     public void onBindViewHolder(ChatAdapter.ListsHolder holder, int position) {
         BaseMessage baseMessage = messageList.get(position);
-        NBody body = NBody.parseFromBody(baseMessage.getMessage().getBody());
+        BaseBody body = BaseBody.fromJson(baseMessage.getMessage().getBody());
         String to = baseMessage.getMessage().getTo();
         boolean isLeft = !XmppStringUtils.parseBareJid(to).contains(
                 parseBareJid(XmppPresenter.getInstance().getCurrentUser()));
@@ -68,7 +68,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ListsHolder> {
         } else {
 
             holder.tvTimeRight.setText(status);
-            holder.tvMsgRight.setText(NBody.parseFromBody(baseMessage.getMessage().getBody()).getContent());
+            holder.tvMsgRight.setText(BaseBody.fromJson(baseMessage.getMessage().getBody()).getContent());
             if (!baseMessage.isRead()) {
                 holder.vItemLeft.setBackgroundResource(R.drawable.chat_right_unread);
             } else {

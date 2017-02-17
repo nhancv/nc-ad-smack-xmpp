@@ -51,8 +51,7 @@ public class UsersFragment extends Fragment {
             @Override
             protected void convert(BaseAdapterHelper helper, BaseRoster user) {
 
-                helper.setText(R.id.tvName, user.getName());
-                helper.setText(R.id.tvLastMsg, TextUtils.isEmpty(user.getLastMessage()) ? "..." : user.getLastMessage());
+                helper.setText(R.id.tvName, user.getJid());
 
                 int color = ContextCompat.getColor(getContext(), R.color.offline_status);
                 if (user.getPresence().isAvailable()) {
@@ -73,7 +72,7 @@ public class UsersFragment extends Fragment {
 
     @ItemClick(R.id.vListsItems)
     public void listItemClick(BaseRoster user) {
-        ChatActivity_.intent(getContext()).address(user.getName()).start();
+        ChatActivity_.intent(getContext()).addressJid(user.getJid()).start();
     }
 
     @ItemLongClick(R.id.vListsItems)
@@ -83,7 +82,7 @@ public class UsersFragment extends Fragment {
         builder.setMessage("Are you sure to remove this contact?");
         // Set up the buttons
         builder.setPositiveButton("OK", (dialog, which) -> {
-            XmppPresenter.getInstance().sendUnFriendRequest(user.getName());
+            XmppPresenter.getInstance().sendUnFriendRequest(user.getJid());
         });
         builder.setNegativeButton("Cancel", (dialog, which) -> {
             dialog.cancel();

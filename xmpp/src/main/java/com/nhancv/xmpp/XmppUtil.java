@@ -1,5 +1,8 @@
 package com.nhancv.xmpp;
 
+import android.content.Context;
+import android.text.format.DateUtils;
+
 import com.nhancv.xmpp.model.ParticipantPresence;
 
 import org.jivesoftware.smack.packet.ExtensionElement;
@@ -16,6 +19,10 @@ import org.xml.sax.SAXException;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -76,6 +83,12 @@ public class XmppUtil {
         return xmlMessage.matches("(.*)<delay xmlns='urn:xmpp:delay'(.*)</delay>(.*)");
     }
 
+    /**
+     * Get chat state
+     *
+     * @param xmlMessage
+     * @return
+     */
     public static ChatState getChatState(String xmlMessage) {
         if (isActive(xmlMessage)) return ChatState.active;
         if (isComposing(xmlMessage)) return ChatState.composing;
@@ -85,6 +98,12 @@ public class XmppUtil {
         return null;
     }
 
+    /**
+     * Get root element
+     *
+     * @param xml
+     * @return
+     */
     public static Element getRootElement(String xml) {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -97,6 +116,12 @@ public class XmppUtil {
         return null;
     }
 
+    /**
+     * Get message by parsing Forwarded message
+     *
+     * @param message
+     * @return
+     */
     public static Message parseForwardedMessage(Message message) {
         try {
             String xmlMessage = message.toXML().toString();
@@ -154,6 +179,12 @@ public class XmppUtil {
         return null;
     }
 
+    /**
+     * Get participant presence from presence for MultiUserChat
+     *
+     * @param presence
+     * @return
+     */
     public static ParticipantPresence getParticipantPresence(Presence presence) {
         try {
             String xml = presence.getExtension("x", "http://jabber.org/protocol/muc#user").toXML().toString();
@@ -169,6 +200,30 @@ public class XmppUtil {
             e.printStackTrace();
         }
         return null;
+    }
+
+    /**
+     * Return relative time
+     *
+     * @param context
+     * @param timeStamp
+     * @return
+     */
+    public static String toRelativeTime(Context context, final long timeStamp) {
+        return DateUtils.getRelativeDateTimeString(context, timeStamp, DateUtils.SECOND_IN_MILLIS, DateUtils.WEEK_IN_MILLIS, DateUtils.FORMAT_ABBREV_ALL).toString();
+    }
+
+    /**
+     * Format Time with pattern and time stamp
+     *
+     * @param pattern
+     * @param timeStamp
+     * @return
+     */
+    public static String formatTime(String pattern, final long timeStamp) {
+        DateFormat dateFormat = new SimpleDateFormat(pattern, Locale.US);
+        Date date = new Date(timeStamp);
+        return dateFormat.format(date);
     }
 
 }
