@@ -105,9 +105,9 @@ public class XmppPresenter implements IXmppPresenter {
     }
 
     @Override
-    public void login(String userJid, String passwod, XmppListener.IXmppLoginListener loginConnectionListener)
+    public void login(String userJid, String password, XmppListener.IXmppLoginListener loginConnectionListener)
             throws IOException, SmackException, XMPPException {
-        IXmppCredential xmppCredential = new XmppCredential(userJid, passwod);
+        IXmppCredential xmppCredential = new XmppCredential(userJid, password);
         xmppConnector = new XmppConnector(xmppConfig);
         xmppConnector.setupLoginConnection(xmppCredential, loginConnectionListener);
         xmppConnector.createConnection();

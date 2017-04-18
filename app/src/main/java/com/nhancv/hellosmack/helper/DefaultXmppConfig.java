@@ -9,12 +9,12 @@ import org.jxmpp.util.XmppStringUtils;
  * Created by nhancao on 2/17/17.
  */
 
-public class BssXmppConfig implements IXmppConfig {
+public class DefaultXmppConfig implements IXmppConfig {
 
-    private static final String PREFIX_JID = "fitaccess.demo";
-    private static final String HOST = "local.beesightsoft.com";
-    private static final String DOMAIN = "local.beesightsoft.com";
-    private static final int PORT = 6001;
+    private static final String PREFIX_JID = "";
+    private static final String HOST = "192.168.1.59";
+    private static final String DOMAIN = "demo.ejabberd.com";
+    private static final int PORT = 7001;
 
     /**
      * Return complete jid from local part.<br>

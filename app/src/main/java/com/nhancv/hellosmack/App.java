@@ -4,7 +4,7 @@ import android.content.Context;
 import android.support.multidex.MultiDex;
 import android.support.multidex.MultiDexApplication;
 
-import com.nhancv.hellosmack.helper.BssXmppConfig;
+import com.nhancv.hellosmack.helper.DefaultXmppConfig;
 import com.nhancv.npreferences.NPreferences;
 import com.nhancv.xmpp.XmppPresenter;
 
@@ -25,6 +25,6 @@ public class App extends MultiDexApplication {
         super.onCreate();
         new NPreferences.Builder(this).withEncryptionPassword(ENCRYPT_KEY).build();
         //Setup config XmppPresenter
-        XmppPresenter.setXmppConfig(new BssXmppConfig());
+        XmppPresenter.setXmppConfig(new DefaultXmppConfig());
     }
 }
